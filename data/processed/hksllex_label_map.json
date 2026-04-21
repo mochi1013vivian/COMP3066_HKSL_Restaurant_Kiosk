@@ -1,0 +1,222 @@
+   {
+  "apple_pie": {
+    "project_label": "apple_pie",
+    "hksllex_id": "",
+    "english": "",
+    "written_chinese_hk": "",
+    "cantonese": "",
+    "verified": "not_found",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "bill": {
+    "project_label": "bill",
+    "hksllex_id": "",
+    "english": "",
+    "written_chinese_hk": "",
+    "cantonese": "",
+    "verified": "not_found",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "cola": {
+    "project_label": "cola",
+    "hksllex_id": "HKSLLEX-2023-00003484",
+    "english": "cola",
+    "written_chinese_hk": "可樂",
+    "cantonese": "",
+    "verified": "review",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "drink": {
+    "project_label": "drink",
+    "hksllex_id": "HKSLLEX-2023-00000082",
+    "english": "drink",
+    "written_chinese_hk": "喝",
+    "cantonese": "飲",
+    "verified": "review",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "eat": {
+    "project_label": "eat",
+    "hksllex_id": "HKSLLEX-2023-00000076",
+    "english": "eat",
+    "written_chinese_hk": "吃",
+    "cantonese": "食",
+    "verified": "review",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "five": {
+    "project_label": "five",
+    "hksllex_id": "",
+    "english": "",
+    "written_chinese_hk": "",
+    "cantonese": "",
+    "verified": "not_found",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "four": {
+    "project_label": "four",
+    "hksllex_id": "HKSLLEX-2023-00000253",
+    "english": "four",
+    "written_chinese_hk": "四",
+    "cantonese": "四",
+    "verified": "review",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "fries": {
+    "project_label": "fries",
+    "hksllex_id": "",
+    "english": "",
+    "written_chinese_hk": "",
+    "cantonese": "",
+    "verified": "not_found",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "hamburger": {
+    "project_label": "hamburger",
+    "hksllex_id": "HKSLLEX-2023-00000972",
+    "english": "hamburger",
+    "written_chinese_hk": "漢堡包",
+    "cantonese": "漢堡包",
+    "verified": "review",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "hash_brown": {
+    "project_label": "hash_brown",
+    "hksllex_id": "",
+    "english": "",
+    "written_chinese_hk": "",
+    "cantonese": "",
+    "verified": "not_found",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "i": {
+    "project_label": "i",
+    "hksllex_id": "",
+    "english": "",
+    "written_chinese_hk": "",
+    "cantonese": "",
+    "verified": "not_found",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "one": {
+    "project_label": "one",
+    "hksllex_id": "HKSLLEX-2023-00001952",
+    "english": "one",
+    "written_chinese_hk": "一",
+    "cantonese": "一",
+    "verified": "review",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "rice": {
+    "project_label": "rice",
+    "hksllex_id": "HKSLLEX-2023-00000730",
+    "english": "rice",
+    "written_chinese_hk": "飯",
+    "cantonese": "飯",
+    "verified": "review",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "table": {
+    "project_label": "table",
+    "hksllex_id": "HKSLLEX-2023-00001166",
+    "english": "table",
+    "written_chinese_hk": "桌子",
+    "cantonese": "枱",
+    "verified": "review",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "tea": {
+    "project_label": "tea",
+    "hksllex_id": "HKSLLEX-2023-00001100",
+    "english": "tea",
+    "written_chinese_hk": "茶",
+    "cantonese": "茶",
+    "verified": "review",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "thank_you": {
+    "project_label": "thank_you",
+    "hksllex_id": "HKSLLEX-2023-00000457",
+    "english": "thank you",
+    "written_chinese_hk": "謝謝",
+    "cantonese": "謝謝",
+    "verified": "review",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "three": {
+    "project_label": "three",
+    "hksllex_id": "HKSLLEX-2023-00000032",
+    "english": "three",
+    "written_chinese_hk": "三",
+    "cantonese": "三",
+    "verified": "review",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "two": {
+    "project_label": "two",
+    "hksllex_id": "HKSLLEX-2023-00000313",
+    "english": "two",
+    "written_chinese_hk": "二",
+    "cantonese": "二",
+    "verified": "review",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "want": {
+    "project_label": "want",
+    "hksllex_id": "HKSLLEX-2023-00000860",
+    "english": "want",
+    "written_chinese_hk": "想",
+    "cantonese": "想",
+    "verified": "review",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  },
+  "water": {
+    "project_label": "water",
+    "hksllex_id": "HKSLLEX-2023-00000555",
+    "english": "water",
+    "written_chinese_hk": "水",
+    "cantonese": "水",
+    "verified": "review",
+    "variant_notes": "",
+    "media_permitted": "permission-confirmed-by-user",
+    "source": "HKU-HKSLLEX"
+  }
+}

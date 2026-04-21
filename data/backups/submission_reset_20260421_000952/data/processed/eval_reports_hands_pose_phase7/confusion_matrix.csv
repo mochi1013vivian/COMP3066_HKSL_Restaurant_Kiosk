@@ -1,0 +1,6 @@
+,cola,eat,fries,table,water
+cola,8,0,0,0,0
+eat,0,8,0,0,0
+fries,0,0,8,0,0
+table,0,0,0,8,0
+water,0,0,0,0,8

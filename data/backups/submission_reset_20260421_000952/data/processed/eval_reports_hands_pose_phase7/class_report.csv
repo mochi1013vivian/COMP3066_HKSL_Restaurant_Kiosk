@@ -1,0 +1,9 @@
+,precision,recall,f1-score,support
+cola,1.0,1.0,1.0,8.0
+eat,1.0,1.0,1.0,8.0
+fries,1.0,1.0,1.0,8.0
+table,1.0,1.0,1.0,8.0
+water,1.0,1.0,1.0,8.0
+accuracy,1.0,1.0,1.0,1.0
+macro avg,1.0,1.0,1.0,40.0
+weighted avg,1.0,1.0,1.0,40.0

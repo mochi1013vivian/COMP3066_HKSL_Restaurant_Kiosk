@@ -1,0 +1,9 @@
+,and,apple_pie,cola,eat,fries,table,water,with
+and,8,0,0,0,0,0,0,0
+apple_pie,0,8,0,0,0,0,0,0
+cola,0,0,8,0,0,0,0,0
+eat,0,0,0,8,0,0,0,0
+fries,0,0,0,0,8,0,0,0
+table,0,0,0,0,0,8,0,0
+water,0,0,0,0,0,0,8,0
+with,0,0,0,0,0,0,0,8

@@ -1,0 +1,178 @@
+[
+  {
+    "hksllex_id": "HKSLLEX-2023-00000032",
+    "english": "three",
+    "project_label_guess": "three",
+    "written_chinese_hk": "三",
+    "cantonese": "三",
+    "disambiguation_english": "",
+    "disambiguation_chinese": "",
+    "media_ref": "{'name': 'HKSLLEX-2023-00000032.mp4', 'duration': '', 'fileExtension': 'mp4', 'supplementary': '', 'nameOSF': 'HKSLLEX-2023-00000032-Three.mp4', 'nameGIF': 'HKSLLEX-2023-00000032-Three.webp'}",
+    "source": "HKU-HKSLLEX"
+  },
+  {
+    "hksllex_id": "HKSLLEX-2023-00000076",
+    "english": "eat",
+    "project_label_guess": "eat",
+    "written_chinese_hk": "吃",
+    "cantonese": "食",
+    "disambiguation_english": "",
+    "disambiguation_chinese": "",
+    "media_ref": "{'name': 'HKSLLEX-2023-00000076.mp4', 'duration': '', 'fileExtension': 'mp4', 'supplementary': '', 'nameOSF': 'HKSLLEX-2023-00000076-Eat.mp4', 'nameGIF': 'HKSLLEX-2023-00000076-Eat.webp'}",
+    "source": "HKU-HKSLLEX"
+  },
+  {
+    "hksllex_id": "HKSLLEX-2023-00000082",
+    "english": "drink",
+    "project_label_guess": "drink",
+    "written_chinese_hk": "喝",
+    "cantonese": "飲",
+    "disambiguation_english": "",
+    "disambiguation_chinese": "",
+    "media_ref": "{'name': 'HKSLLEX-2023-00000082.mp4', 'duration': '', 'fileExtension': 'mp4', 'supplementary': '', 'nameOSF': 'HKSLLEX-2023-00000082-Drink.mp4', 'nameGIF': 'HKSLLEX-2023-00000082-Drink.webp'}",
+    "source": "HKU-HKSLLEX"
+  },
+  {
+    "hksllex_id": "HKSLLEX-2023-00000210",
+    "english": "and",
+    "project_label_guess": "and",
+    "written_chinese_hk": "並且",
+    "cantonese": "同埋",
+    "disambiguation_english": "",
+    "disambiguation_chinese": "",
+    "media_ref": "{'name': 'HKSLLEX-2023-00000210.mp4', 'duration': '', 'fileExtension': 'mp4', 'supplementary': '', 'nameOSF': 'HKSLLEX-2023-00000210-And.mp4', 'nameGIF': 'HKSLLEX-2023-00000210-And.webp'}",
+    "source": "HKU-HKSLLEX"
+  },
+  {
+    "hksllex_id": "HKSLLEX-2023-00000253",
+    "english": "four",
+    "project_label_guess": "four",
+    "written_chinese_hk": "四",
+    "cantonese": "四",
+    "disambiguation_english": "",
+    "disambiguation_chinese": "",
+    "media_ref": "{'name': 'HKSLLEX-2023-00000253.mp4', 'duration': '', 'fileExtension': 'mp4', 'supplementary': '', 'nameOSF': 'HKSLLEX-2023-00000253-Four.mp4', 'nameGIF': 'HKSLLEX-2023-00000253-Four.webp'}",
+    "source": "HKU-HKSLLEX"
+  },
+  {
+    "hksllex_id": "HKSLLEX-2023-00000313",
+    "english": "two",
+    "project_label_guess": "two",
+    "written_chinese_hk": "二",
+    "cantonese": "二",
+    "disambiguation_english": "",
+    "disambiguation_chinese": "",
+    "media_ref": "{'name': 'HKSLLEX-2023-00000313.mp4', 'duration': '', 'fileExtension': 'mp4', 'supplementary': '', 'nameOSF': 'HKSLLEX-2023-00000313-Two.mp4', 'nameGIF': 'HKSLLEX-2023-00000313-Two.webp'}",
+    "source": "HKU-HKSLLEX"
+  },
+  {
+    "hksllex_id": "HKSLLEX-2023-00000457",
+    "english": "thank you",
+    "project_label_guess": "thank_you",
+    "written_chinese_hk": "謝謝",
+    "cantonese": "謝謝",
+    "disambiguation_english": "",
+    "disambiguation_chinese": "",
+    "media_ref": "{'name': 'HKSLLEX-2023-00000457.mp4', 'duration': '', 'fileExtension': 'mp4', 'supplementary': '', 'nameOSF': 'HKSLLEX-2023-00000457-Thankyou.mp4', 'nameGIF': 'HKSLLEX-2023-00000457-Thankyou.webp'}",
+    "source": "HKU-HKSLLEX"
+  },
+  {
+    "hksllex_id": "HKSLLEX-2023-00000555",
+    "english": "water",
+    "project_label_guess": "water",
+    "written_chinese_hk": "水",
+    "cantonese": "水",
+    "disambiguation_english": "",
+    "disambiguation_chinese": "",
+    "media_ref": "{'name': 'HKSLLEX-2023-00000555.mp4', 'duration': '', 'fileExtension': 'mp4', 'supplementary': '', 'nameOSF': 'HKSLLEX-2023-00000555-Water.mp4', 'nameGIF': 'HKSLLEX-2023-00000555-Water.webp'}",
+    "source": "HKU-HKSLLEX"
+  },
+  {
+    "hksllex_id": "HKSLLEX-2023-00000730",
+    "english": "rice",
+    "project_label_guess": "rice",
+    "written_chinese_hk": "飯",
+    "cantonese": "飯",
+    "disambiguation_english": "",
+    "disambiguation_chinese": "",
+    "media_ref": "{'name': 'HKSLLEX-2023-00000730.mp4', 'duration': '', 'fileExtension': 'mp4', 'supplementary': '', 'nameOSF': 'HKSLLEX-2023-00000730-Rice.mp4', 'nameGIF': 'HKSLLEX-2023-00000730-Rice.webp'}",
+    "source": "HKU-HKSLLEX"
+  },
+  {
+    "hksllex_id": "HKSLLEX-2023-00000860",
+    "english": "want",
+    "project_label_guess": "want",
+    "written_chinese_hk": "想",
+    "cantonese": "想",
+    "disambiguation_english": "",
+    "disambiguation_chinese": "",
+    "media_ref": "{'name': 'HKSLLEX-2023-00000860.mp4', 'duration': '', 'fileExtension': 'mp4', 'supplementary': '', 'nameOSF': 'HKSLLEX-2023-00000860-Want.mp4', 'nameGIF': 'HKSLLEX-2023-00000860-Want.webp'}",
+    "source": "HKU-HKSLLEX"
+  },
+  {
+    "hksllex_id": "HKSLLEX-2023-00000972",
+    "english": "hamburger",
+    "project_label_guess": "hamburger",
+    "written_chinese_hk": "漢堡包",
+    "cantonese": "漢堡包",
+    "disambiguation_english": "",
+    "disambiguation_chinese": "",
+    "media_ref": "{'name': 'HKSLLEX-2023-00000972.mp4', 'duration': '', 'fileExtension': 'mp4', 'supplementary': '', 'nameOSF': 'HKSLLEX-2023-00000972-Hamburger.mp4', 'nameGIF': 'HKSLLEX-2023-00000972-Hamburger.webp'}",
+    "source": "HKU-HKSLLEX"
+  },
+  {
+    "hksllex_id": "HKSLLEX-2023-00001100",
+    "english": "tea",
+    "project_label_guess": "tea",
+    "written_chinese_hk": "茶",
+    "cantonese": "茶",
+    "disambiguation_english": "",
+    "disambiguation_chinese": "",
+    "media_ref": "{'name': 'HKSLLEX-2023-00001100.mp4', 'duration': '', 'fileExtension': 'mp4', 'supplementary': '', 'nameOSF': 'HKSLLEX-2023-00001100-Tea.mp4', 'nameGIF': 'HKSLLEX-2023-00001100-Tea.webp'}",
+    "source": "HKU-HKSLLEX"
+  },
+  {
+    "hksllex_id": "HKSLLEX-2023-00001166",
+    "english": "table",
+    "project_label_guess": "table",
+    "written_chinese_hk": "桌子",
+    "cantonese": "枱",
+    "disambiguation_english": "",
+    "disambiguation_chinese": "",
+    "media_ref": "{'name': 'HKSLLEX-2023-00001166.mp4', 'duration': '', 'fileExtension': 'mp4', 'supplementary': '', 'nameOSF': 'HKSLLEX-2023-00001166-Table.mp4', 'nameGIF': 'HKSLLEX-2023-00001166-Table.webp'}",
+    "source": "HKU-HKSLLEX"
+  },
+  {
+    "hksllex_id": "HKSLLEX-2023-00001321",
+    "english": "with",
+    "project_label_guess": "with",
+    "written_chinese_hk": "和",
+    "cantonese": "和",
+    "disambiguation_english": "",
+    "disambiguation_chinese": "",
+    "media_ref": "{'name': 'HKSLLEX-2023-00001321.mp4', 'duration': '', 'fileExtension': 'mp4', 'supplementary': '', 'nameOSF': 'HKSLLEX-2023-00001321-With.mp4', 'nameGIF': 'HKSLLEX-2023-00001321-With.webp'}",
+    "source": "HKU-HKSLLEX"
+  },
+  {
+    "hksllex_id": "HKSLLEX-2023-00001952",
+    "english": "one",
+    "project_label_guess": "one",
+    "written_chinese_hk": "一",
+    "cantonese": "一",
+    "disambiguation_english": "",
+    "disambiguation_chinese": "",
+    "media_ref": "{'name': 'HKSLLEX-2023-00001952.mp4', 'duration': '', 'fileExtension': 'mp4', 'supplementary': '', 'nameOSF': 'HKSLLEX-2023-00001952-One.mp4', 'nameGIF': 'HKSLLEX-2023-00001952-One.webp'}",
+    "source": "HKU-HKSLLEX"
+  },
+  {
+    "hksllex_id": "HKSLLEX-2023-00003484",
+    "english": "cola",
+    "project_label_guess": "cola",
+    "written_chinese_hk": "可樂",
+    "cantonese": "",
+    "disambiguation_english": "",
+    "disambiguation_chinese": "",
+    "media_ref": "{'name': 'HKSLLEX-2023-00003484.mp4', 'duration': '', 'fileExtension': 'mp4', 'supplementary': '', 'nameOSF': 'HKSLLEX-2023-00003484-Cola.mp4', 'nameGIF': 'HKSLLEX-2023-00003484-Cola.webp'}",
+    "source": "HKU-HKSLLEX"
+  }
+]

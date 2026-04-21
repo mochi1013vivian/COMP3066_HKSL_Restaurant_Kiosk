@@ -1,0 +1,12 @@
+,precision,recall,f1-score,support
+and,1.0,1.0,1.0,8.0
+apple_pie,1.0,1.0,1.0,8.0
+cola,1.0,1.0,1.0,8.0
+eat,1.0,1.0,1.0,8.0
+fries,1.0,1.0,1.0,8.0
+table,1.0,1.0,1.0,8.0
+water,1.0,1.0,1.0,8.0
+with,1.0,1.0,1.0,8.0
+accuracy,1.0,1.0,1.0,1.0
+macro avg,1.0,1.0,1.0,64.0
+weighted avg,1.0,1.0,1.0,64.0

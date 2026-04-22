@@ -300,7 +300,7 @@ def main() -> None:
             extractor.draw_landmarks(
                 frame,
                 result,
-                draw_pose=args.show_pose_debug or (args.debug_ui and feature_mode == FEATURE_MODE_HANDS_POSE),
+                draw_pose=(feature_mode == FEATURE_MODE_HANDS_POSE) or args.show_pose_debug,
             )
             pose_debug = extractor.get_pose_debug_info(result)
             if args.show_pose_debug:

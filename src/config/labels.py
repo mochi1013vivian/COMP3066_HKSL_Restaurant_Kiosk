@@ -12,7 +12,7 @@ from typing import Dict, List
 PHASE_1_STABLE = ["i", "want", "one", "two", "three", "four", "five"]
 
 # PHASE 1 additions selected for immediate collection
-PHASE_1_ADDITIONS = ["hamburger", "fries", "apple_pie", "hash_brown", "cola", "thank_you"]
+PHASE_1_ADDITIONS = ["hamburger", "fries", "apple_pie", "hash_brown", "thank_you"]
 
 # PHASE 2 additions (next batch - medium priority)
 PHASE_2_ADDITIONS = []
@@ -29,7 +29,6 @@ FOOD_ITEMS = [
     "apple_pie",
     "hash_brown",
     "fries",
-    "cola",
 ]
 
 # Action verbs (to be added progressively)
@@ -54,7 +53,6 @@ DEFAULT_LABELS = [
     "fries",
     "apple_pie",
     "hash_brown",
-    "cola",
     "and",
     "with",
     "thank_you",
@@ -76,7 +74,6 @@ TOKEN_DISPLAY_MAP: Dict[str, str] = {
     "apple_pie": "apple pie",
     "hash_brown": "hash brown",
     "fries": "fries",
-    "cola": "cola",
     "thank_you": "thank you",
     "and": "and",
     "with": "with",
@@ -94,7 +91,6 @@ EMOJI_MAP: Dict[str, str] = {
     "fries": "🍟",
     "apple_pie": "🥧",
     "hash_brown": "🟨",
-    "cola": "🥤",
     "and": "➕",
     "with": "🔗",
     "thank_you": "🙏",

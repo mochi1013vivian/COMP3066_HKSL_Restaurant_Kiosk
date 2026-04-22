@@ -75,6 +75,35 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Convenience switch for arms+hands collection (equivalent to --feature-mode hands_pose).",
     )
+    parser.add_argument(
+        "--auto-segment-motion",
+        action="store_true",
+        help="Use motion-energy auto-segmentation to capture action windows instead of purely frame-count windows.",
+    )
+    parser.add_argument(
+        "--motion-energy-threshold",
+        type=float,
+        default=0.010,
+        help="Smoothed motion-energy threshold for active movement (normalized landmark units).",
+    )
+    parser.add_argument(
+        "--motion-energy-alpha",
+        type=float,
+        default=0.60,
+        help="EMA smoothing factor for motion energy in [0,1]. Higher reacts faster.",
+    )
+    parser.add_argument(
+        "--motion-tail-frames",
+        type=int,
+        default=4,
+        help="Extra quiet frames to keep after motion drops below threshold.",
+    )
+    parser.add_argument(
+        "--min-motion-frames",
+        type=int,
+        default=8,
+        help="Minimum active-motion frames required to accept a segmented sample.",
+    )
     return parser.parse_args()
 
 
@@ -100,6 +129,29 @@ def append_sequence(path: Path, label: str, seq: np.ndarray, feature_mode: str) 
     row = [label, seq.shape[0]] + flatten_sequence(seq, feature_mode=feature_mode).tolist()
     with open(path, "a", newline="", encoding="utf-8") as f:
         csv.writer(f).writerow(row)
+
+
+def _motion_energy(prev_row: np.ndarray | None, curr_row: np.ndarray | None) -> float:
+    """Compute frame-to-frame motion energy over valid landmarks only."""
+    if prev_row is None or curr_row is None:
+        return 0.0
+
+    prev = np.asarray(prev_row, dtype=np.float32).reshape(-1)
+    curr = np.asarray(curr_row, dtype=np.float32).reshape(-1)
+    if prev.shape != curr.shape or prev.size == 0 or prev.size % 3 != 0:
+        return 0.0
+
+    prev_pts = prev.reshape(-1, 3)
+    curr_pts = curr.reshape(-1, 3)
+
+    prev_valid = np.linalg.norm(prev_pts, axis=1) > 1e-8
+    curr_valid = np.linalg.norm(curr_pts, axis=1) > 1e-8
+    valid = prev_valid & curr_valid
+    if not np.any(valid):
+        return 0.0
+
+    delta_xy = curr_pts[valid, :2] - prev_pts[valid, :2]
+    return float(np.mean(np.linalg.norm(delta_xy, axis=1)))
 
 
 def main() -> None:
@@ -141,6 +193,14 @@ def main() -> None:
     is_recording = False
     countdown_start_ts = 0.0
     frame_buffer: List[np.ndarray] = []
+    prev_raw_row: np.ndarray | None = None
+    motion_energy_ema = 0.0
+
+    # Auto-segmentation state
+    segment_open = False
+    segment_buffer: List[np.ndarray] = []
+    quiet_tail_count = 0
+    motion_frame_hits = 0
 
     with HandLandmarkExtractor(config) as extractor:
         while cap.isOpened() and collected < args.samples:
@@ -162,19 +222,66 @@ def main() -> None:
                 if countdown_remaining <= 1e-6:
                     is_recording = True
                     frame_buffer.clear()
+                    segment_open = False
+                    segment_buffer.clear()
+                    quiet_tail_count = 0
+                    motion_frame_hits = 0
+                    prev_raw_row = None
+                    motion_energy_ema = 0.0
 
             if is_recording:
-                if raw_row is None:
-                    frame_buffer.clear()
-                else:
-                    frame_buffer.append(raw_row)
+                if not args.auto_segment_motion:
+                    if raw_row is None:
+                        frame_buffer.clear()
+                    else:
+                        frame_buffer.append(raw_row)
 
-                if len(frame_buffer) >= args.window_size:
-                    seq = np.asarray(frame_buffer[: args.window_size], dtype=np.float32)
-                    append_sequence(output_path, args.label, seq, feature_mode=feature_mode)
-                    collected += 1
-                    frame_buffer.clear()
-                    time.sleep(args.cooldown)
+                    if len(frame_buffer) >= args.window_size:
+                        seq = np.asarray(frame_buffer[: args.window_size], dtype=np.float32)
+                        append_sequence(output_path, args.label, seq, feature_mode=feature_mode)
+                        collected += 1
+                        frame_buffer.clear()
+                        time.sleep(args.cooldown)
+                else:
+                    alpha = float(np.clip(args.motion_energy_alpha, 0.0, 1.0))
+                    energy_now = _motion_energy(prev_raw_row, raw_row if raw_row is not None else None)
+                    motion_energy_ema = alpha * energy_now + (1.0 - alpha) * motion_energy_ema
+                    is_motion_active = motion_energy_ema >= args.motion_energy_threshold
+
+                    if raw_row is not None:
+                        if is_motion_active:
+                            if not segment_open:
+                                segment_open = True
+                                segment_buffer = []
+                                quiet_tail_count = 0
+                                motion_frame_hits = 0
+                            segment_buffer.append(raw_row)
+                            motion_frame_hits += 1
+                            quiet_tail_count = 0
+                        elif segment_open:
+                            # Keep a small tail after motion drops so action endings are not clipped.
+                            if quiet_tail_count < max(0, args.motion_tail_frames):
+                                segment_buffer.append(raw_row)
+                                quiet_tail_count += 1
+                            else:
+                                segment_open = False
+                                segment_buffer.clear()
+                                quiet_tail_count = 0
+                                motion_frame_hits = 0
+
+                        if segment_open and len(segment_buffer) >= args.window_size:
+                            if motion_frame_hits >= max(1, args.min_motion_frames):
+                                seq = np.asarray(segment_buffer[: args.window_size], dtype=np.float32)
+                                append_sequence(output_path, args.label, seq, feature_mode=feature_mode)
+                                collected += 1
+                                time.sleep(args.cooldown)
+
+                            segment_open = False
+                            segment_buffer.clear()
+                            quiet_tail_count = 0
+                            motion_frame_hits = 0
+
+                    prev_raw_row = raw_row.copy() if raw_row is not None else None
 
             state = "IDLE"
             if is_armed and not is_recording:
@@ -199,7 +306,18 @@ def main() -> None:
                 cv2.putText(frame, f"Recording starts in: {countdown_remaining:.1f}s", (20, 145), cv2.FONT_HERSHEY_SIMPLEX, 0.95, (0, 220, 255), 3)
 
             if state == "RECORDING":
-                cv2.putText(frame, f"Auto recording... frames: {len(frame_buffer)}/{args.window_size}", (20, 145), cv2.FONT_HERSHEY_SIMPLEX, 0.85, (0, 80, 255), 2)
+                if args.auto_segment_motion:
+                    cv2.putText(
+                        frame,
+                        f"Motion auto-seg: buf {len(segment_buffer)}/{args.window_size} | active {motion_frame_hits} | E {motion_energy_ema:.4f}/{args.motion_energy_threshold:.4f}",
+                        (20, 145),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.66,
+                        (0, 180, 255),
+                        2,
+                    )
+                else:
+                    cv2.putText(frame, f"Auto recording... frames: {len(frame_buffer)}/{args.window_size}", (20, 145), cv2.FONT_HERSHEY_SIMPLEX, 0.85, (0, 80, 255), 2)
 
             if feature_mode == FEATURE_MODE_HANDS_POSE:
                 present = bool(pose_debug.get("present", False))
@@ -247,6 +365,12 @@ def main() -> None:
                 is_armed = False
                 is_recording = False
                 frame_buffer.clear()
+                segment_open = False
+                segment_buffer.clear()
+                quiet_tail_count = 0
+                motion_frame_hits = 0
+                prev_raw_row = None
+                motion_energy_ema = 0.0
 
             if is_recording and collected >= args.samples:
                 is_recording = False

@@ -45,7 +45,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--window-size", type=int, default=DEFAULT_WINDOW_SIZE)
     parser.add_argument("--model-out", type=Path, default=DEFAULT_MODEL_PATH)
     parser.add_argument("--class-out", type=Path, default=DEFAULT_CLASS_NAMES_PATH)
-    parser.add_argument("--epochs", type=int, default=30)
+    parser.add_argument("--epochs", type=int, default=40)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--hidden-dim", type=int, default=128)

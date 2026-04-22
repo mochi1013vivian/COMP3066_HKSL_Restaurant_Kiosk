@@ -22,10 +22,45 @@ COMP3066 prototype using closed-domain HKSL for realistic restaurant environment
 - `four`
 - `five`
 - `hamburger`
-- `apple_pie`
-- `hash_brown`
 - `fries`
-- `cola`
+- `hash_brown`
+- `apple_pie`
+- `and`
+- `with`
+- `thank_you`
+
+Fresh recollection set:
+- `i`
+- `want`
+- `hamburger`
+- `fries`
+- `hash_brown`
+- `apple_pie`
+- `and`
+- `with`
+- `thank_you`
+- `one`
+- `two`
+- `three`
+- `four`
+- `five`
+
+### Clean recollection plan
+
+If you want to rebuild the dataset from scratch, delete the active collection CSV and use the phase files below so old data does not mix with the new recording cycle:
+
+- `data/raw/labels_phase1_core.txt` → `i`, `want`, `one`, `two`, `three`, `four`, `five`
+- `data/raw/labels_phase2_foods.txt` → `hamburger`, `fries`, `hash_brown`, `apple_pie`
+- `data/raw/labels_phase3_connectors_service.txt` → `and`, `with`, `thank_you`
+
+Recommended reset targets for the fresh run:
+
+- `data/raw/landmarks_sequences_submission_hands_pose.csv`
+- `models/best_gru_submission_hands_pose.pt`
+- `models/class_names_submission_hands_pose.json`
+- `data/processed/eval_reports_submission_hands_pose/`
+
+Use `thank_you` in the code/labels, even if you display it as “thank you” in the UI.
 
 You can edit `src/config/labels.py` for controlled vocabulary changes.
 
@@ -83,15 +118,15 @@ python src/data/collect_sequences.py --label fries --samples 60 --camera-index 1
 
 ### Phase-by-phase expansion example
 
-For the new Phase 4 glue words, collect them one at a time using the dedicated label file:
+Use the three clean batch files below for recollection:
 
 ```bash
-python src/data/collect_sequences.py --label and --label-file data/raw/labels_phase4.txt --samples 50 --camera-index 1 --output data/raw/landmarks_sequences_round1.csv
-python src/data/collect_sequences.py --label with --label-file data/raw/labels_phase4.txt --samples 50 --camera-index 1 --output data/raw/landmarks_sequences_round1.csv
+python src/data/collect_sequences.py --label i --label-file data/raw/labels_phase1_core.txt --samples 50 --camera-index 1 --output data/raw/landmarks_sequences_submission_hands_pose.csv --feature-mode hands_pose --with-arms
+python src/data/collect_sequences.py --label hamburger --label-file data/raw/labels_phase2_foods.txt --samples 50 --camera-index 1 --output data/raw/landmarks_sequences_submission_hands_pose.csv --feature-mode hands_pose --with-arms
+python src/data/collect_sequences.py --label and --label-file data/raw/labels_phase3_connectors_service.txt --samples 50 --camera-index 1 --output data/raw/landmarks_sequences_submission_hands_pose.csv --feature-mode hands_pose --with-arms
 ```
 
 Notes:
-- `apple_pie` is already in the current vocabulary.
 - Keep using the same explicit output CSV while you expand phase by phase.
 - Add only one small phase at a time so retraining stays understandable.
 
@@ -109,7 +144,7 @@ Repeat collection for each label.
 ## 3) Train model (GRU)
 
 ```bash
-python src/train/train_gru.py --data data/raw/landmarks_sequences_round1.csv --window-size 20 --epochs 30 --batch-size 32 --feature-mode hands_pose
+python src/train/train_gru.py --data data/raw/landmarks_sequences_round1.csv --window-size 20 --epochs 40 --batch-size 32 --feature-mode hands_pose
 ```
 
 Outputs:
@@ -246,6 +281,23 @@ The order number is **auto-generated** from a session counter (starting at `A12`
 - `--accept-cooldown` (default `1.0`s, presentation: `0.35`s)
 - `--repeat-block-seconds` (default `2.0`s, presentation: `2.2`s)
 - `--no-sign-frames` (default `11` frames, ~367ms @ 30fps)
+
+### Suggested precision pass for the new dataset
+
+After recollecting, train with the following pattern:
+
+```bash
+python src/train/train_gru.py --data data/raw/landmarks_sequences_submission_hands_pose.csv --window-size 20 --epochs 40 --batch-size 32 --feature-mode hands_pose --with-arms
+python src/eval/evaluate_gru.py --data data/raw/landmarks_sequences_submission_hands_pose.csv --window-size 20 --feature-mode hands_pose --with-arms
+python src/app.py --camera-index 1 --sound --presentation-mode --feature-mode hands_pose
+```
+
+For live sensitivity tuning:
+
+- raise `--accept-confidence` if false positives appear
+- raise `--stable-frames` if words are accepted too early
+- lower `--accept-cooldown` only after the dataset is stable
+- keep `--no-sign-frames` high enough to block repeats
 
 Increase confidence and stable-frames for fewer false accepts.
 

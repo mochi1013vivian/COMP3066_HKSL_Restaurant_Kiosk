@@ -672,7 +672,7 @@ def draw_demo_ui(
 
     if fh0 >= 60:
         footer_lines = [
-            "Menu: hamburger, fries, cola, apple pie",
+            "Menu: hamburger, fries, hash brown, apple pie",
             "X reset | Z undo | C confirm | N new order | Enter speak | Q/ESC quit",
         ]
     else:

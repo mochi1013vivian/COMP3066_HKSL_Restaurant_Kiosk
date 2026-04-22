@@ -8,6 +8,7 @@ Layout:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import List, Optional, Sequence, Tuple
 
 import cv2
@@ -19,6 +20,10 @@ except Exception:  # pragma: no cover
     Image = None
     ImageDraw = None
     ImageFont = None
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+FOOD_ASSET_DIR = PROJECT_ROOT / "data" / "processed" / "ui_assets" / "food"
 
 
 def _rounded_card(img: np.ndarray, x: int, y: int, w: int, h: int, color: Tuple[int, int, int], r: int = 16) -> None:
@@ -102,9 +107,9 @@ def compute_demo_layout(frame_shape: Tuple[int, int, int]) -> DemoUiLayout:
 
     ratio = {
         "header": 0.11,
-        "word": 0.17,
-        "sentence": 0.30,
-        "order": 0.29,
+        "word": 0.18,
+        "sentence": 0.27,
+        "order": 0.31,
         "controls": 0.13,
     }
 
@@ -171,11 +176,11 @@ def compute_demo_layout(frame_shape: Tuple[int, int, int]) -> DemoUiLayout:
     y += h_order + pad
     controls_card = (cx, y, cw, h_controls)
 
-    inner_pad = max(8, int(round(cw * 0.04)))
-    btn_margin = max(6, int(round(h_order * 0.06)))
-    btn_w = max(int(round(cw * 0.60)), cw - (inner_pad * 2))
-    btn_h_confirm = max(30, min(int(round(h_order * 0.40)), int(round(h_order * 0.52))))
-    btn_h_new = max(26, min(int(round(h_order * 0.34)), int(round(h_order * 0.46))))
+    inner_pad = max(10, int(round(cw * 0.045)))
+    btn_margin = max(8, int(round(h_order * 0.08)))
+    btn_w = cw - (inner_pad * 2)
+    btn_h_confirm = max(34, min(int(round(h_order * 0.30)), int(round(h_order * 0.38))))
+    btn_h_new = max(30, min(int(round(h_order * 0.30)), int(round(h_order * 0.38))))
     confirm_y = order_card[1] + order_card[3] - btn_h_confirm - btn_margin
     new_order_y = order_card[1] + order_card[3] - btn_h_new - btn_margin
     confirm_button = (order_card[0] + inner_pad, confirm_y, btn_w, btn_h_confirm)
@@ -227,6 +232,47 @@ def _is_clean_token(token: str) -> bool:
     return all(ch in allowed for ch in token.upper())
 
 
+def _food_emoji(token: str) -> str:
+    food_map = {
+        "hamburger": "🍔",
+        "fries": "🍟",
+        "apple_pie": "🥧",
+        "hash_brown": "🥔",
+    }
+    return food_map.get(token.strip().lower(), "")
+
+
+def _food_tokens(tokens: Sequence[str]) -> List[Tuple[str, str]]:
+    out: List[Tuple[str, str]] = []
+    for tk in tokens:
+        emoji = _food_emoji(tk)
+        if emoji:
+            out.append((tk, emoji))
+    return out
+
+
+def _load_food_photo(token: str, target_w: int, target_h: int) -> Optional[np.ndarray]:
+    """Load a food photo for a token from workspace assets and resize to cover box."""
+    clean = token.strip().lower()
+    if not clean:
+        return None
+
+    candidates = [
+        FOOD_ASSET_DIR / f"{clean}.jpg",
+        FOOD_ASSET_DIR / f"{clean}.jpeg",
+        FOOD_ASSET_DIR / f"{clean}.png",
+        FOOD_ASSET_DIR / f"{clean}.webp",
+    ]
+    for path in candidates:
+        if not path.exists():
+            continue
+        img = cv2.imread(str(path))
+        if img is None:
+            continue
+        return _resize_cover(img, max(1, target_w), max(1, target_h))
+    return None
+
+
 def _draw_badge(canvas: np.ndarray, text: str, x: int, y: int, w: int, h: int, color: Tuple[int, int, int], text_color: Tuple[int, int, int]) -> None:
     _rounded_card(canvas, x, y, w, h, color, r=max(8, h // 2))
     scale = _fit_text_scale(text, target_px=max(14, int(h * 0.58)), max_width=w - 10, max_height=h - 4, thickness=1, min_scale=0.38, max_scale=1.4)
@@ -239,13 +285,13 @@ def _draw_badge(canvas: np.ndarray, text: str, x: int, y: int, w: int, h: int, c
 def _draw_button(canvas: np.ndarray, rect: Tuple[int, int, int, int], text: str, enabled: bool, *, primary: bool = True) -> None:
     x, y, w, h = rect
     if enabled:
-        color = (34, 124, 255) if primary else (72, 170, 82)
-        text_color = (248, 250, 252)
+        color = (28, 41, 218) if primary else (44, 199, 255)
+        text_color = (255, 255, 255) if primary else (28, 41, 218)
         border = (255, 255, 255)
     else:
-        color = (183, 192, 204)
-        text_color = (88, 96, 106)
-        border = (206, 214, 223)
+        color = (188, 188, 188)
+        text_color = (92, 92, 92)
+        border = (218, 218, 218)
 
     _rounded_card(canvas, x, y, w, h, color, r=max(8, h // 2))
     border_thickness = 1 if h < 40 else 2
@@ -402,17 +448,18 @@ def draw_demo_ui(
     panel_x = layout.panel_x
     pad = layout.pad
 
-    # ---- Warm palette (clean fast-food / kiosk)
-    cream_bg = (244, 241, 232)
-    panel_bg = (248, 237, 223)
-    card_bg = (246, 250, 254)
-    accent_tomato = (44, 89, 227)
-    accent_orange = (29, 160, 245)
-    accent_green = (95, 163, 102)
-    text_dark = (36, 48, 62)
-    text_muted = (90, 103, 116)
+    # ---- Red / yellow / white (fast-food inspired)
+    white_bg = (255, 255, 255)
+    panel_bg = (242, 244, 255)
+    card_bg = (255, 255, 255)
+    mcd_red = (28, 41, 218)
+    mcd_yellow = (44, 199, 255)
+    mcd_orange = (70, 170, 255)
+    mcd_green = (60, 155, 75)
+    text_dark = (30, 36, 50)
+    text_muted = (84, 92, 104)
 
-    canvas = np.full((h, w, 3), cream_bg, dtype=np.uint8)
+    canvas = np.full((h, w, 3), white_bg, dtype=np.uint8)
 
     # ---- Left large camera area (clean, minimal overlays)
     cam = _resize_cover(frame, cam_w, h)
@@ -420,13 +467,14 @@ def draw_demo_ui(
 
     # Subtle camera frame and compact top label (resolution-aware)
     cam_margin = max(6, int(round(min(cam_w, h) * 0.012)))
-    cv2.rectangle(canvas, (cam_margin, cam_margin), (cam_w - cam_margin, h - cam_margin), (242, 248, 252), 2)
+    cv2.rectangle(canvas, (cam_margin, cam_margin), (cam_w - cam_margin, h - cam_margin), mcd_red, 2)
 
     label_x = cam_margin + max(6, int(round(cam_w * 0.012)))
     label_y = cam_margin + max(4, int(round(h * 0.010)))
     label_w = max(180, int(round(cam_w * 0.58)))
     label_h = max(30, int(round(h * 0.068)))
-    cv2.rectangle(canvas, (label_x, label_y), (label_x + label_w, label_y + label_h), (250, 252, 255), -1)
+    cv2.rectangle(canvas, (label_x, label_y), (label_x + label_w, label_y + label_h), (255, 255, 255), -1)
+    cv2.rectangle(canvas, (label_x, label_y), (label_x + label_w, label_y + label_h), mcd_yellow, 2)
 
     cam_label = f"Live signer view   FPS {fps:.1f}"
     cam_scale = _fit_text_scale(
@@ -439,11 +487,11 @@ def draw_demo_ui(
         max_scale=0.78,
     )
     cam_text_y = label_y + max(16, int(round(label_h * 0.70)))
-    cv2.putText(canvas, cam_label, (label_x + 10, cam_text_y), cv2.FONT_HERSHEY_SIMPLEX, cam_scale, (74, 92, 106), 1, cv2.LINE_AA)
+    cv2.putText(canvas, cam_label, (label_x + 10, cam_text_y), cv2.FONT_HERSHEY_SIMPLEX, cam_scale, text_dark, 1, cv2.LINE_AA)
 
     # ---- Right dashboard panel
     cv2.rectangle(canvas, (panel_x, 0), (w, h), panel_bg, -1)
-    cv2.line(canvas, (panel_x, 0), (panel_x, h), (190, 206, 219), 2)
+    cv2.line(canvas, (panel_x, 0), (panel_x, h), mcd_red, 3)
 
     # Header strip
     _rounded_card(canvas, *layout.header, card_bg, r=12)
@@ -453,10 +501,10 @@ def draw_demo_ui(
     live_w = max(64, int(round(hw * 0.24)))
     live_x = hx + hw - header_pad_x - live_w
     live_y = hy + max(6, int(round(hh * 0.14)))
-    _draw_badge(canvas, "LIVE", live_x, live_y, live_w, live_h, accent_tomato, (248, 250, 252))
+    _draw_badge(canvas, "LIVE", live_x, live_y, live_w, live_h, mcd_red, (255, 255, 255))
 
-    title = "Restaurant Kiosk"
-    subtitle = "Sign-language ordering"
+    title = "FastFood Sign Kiosk"
+    subtitle = "American-style ordering demo"
     title_max_w = max(80, (live_x - 8) - (hx + header_pad_x))
     title_scale = _fit_text_scale(
         title,
@@ -485,7 +533,7 @@ def draw_demo_ui(
     wx0, wy0, ww0, wh0 = layout.word_card
     _rounded_card(canvas, wx0, wy0, ww0, wh0, card_bg, r=14)
     word_pad_x = max(8, int(round(ww0 * 0.035)))
-    _draw_card_title(canvas, "Current word", wx0 + word_pad_x, wy0 + max(18, int(round(wh0 * 0.22))))
+    _draw_card_title(canvas, "Current translation", wx0 + word_pad_x, wy0 + max(18, int(round(wh0 * 0.22))))
     live_word_raw = (live_token or "").strip().upper()
     stable_word_raw = (confirmed_token or "").strip().upper()
     live_word = live_word_raw if _is_clean_token(live_word_raw) else ""
@@ -494,11 +542,11 @@ def draw_demo_ui(
     if stable_word:
         current_word = stable_word
         subline = f"confirmed: {stable_word}"
-        state_color = accent_green
+        state_color = mcd_green
     elif live_word_raw:
         current_word = live_word_raw
         subline = f"detected: {live_word_raw}"
-        state_color = accent_orange
+        state_color = mcd_orange
     else:
         current_word = "WAITING FOR SIGN"
         subline = "show the next sign clearly"
@@ -509,7 +557,7 @@ def draw_demo_ui(
     word_box_w = ww0 - (word_pad_x * 2)
     word_box_y = wy0 + max(28, int(round(wh0 * 0.33)))
     word_box_h = max(30, wh0 - int(round(wh0 * 0.45)))
-    _rounded_card(canvas, word_box_x, word_box_y, word_box_w, word_box_h, (224, 235, 255), r=14)
+    _rounded_card(canvas, word_box_x, word_box_y, word_box_w, word_box_h, (230, 240, 255), r=14)
 
     scale_word = _fit_text_scale(
         current_word,
@@ -524,6 +572,19 @@ def draw_demo_ui(
     wx = word_box_x + max(6, (word_box_w - tw) // 2)
     wy = word_box_y + max(th + 4, int(word_box_h * 0.60))
     cv2.putText(canvas, current_word, (wx, wy), cv2.FONT_HERSHEY_SIMPLEX, scale_word, text_dark, 2, cv2.LINE_AA)
+
+    active_emoji = (current_emoji or "").strip()
+    if active_emoji and active_emoji != "◯":
+        emoji_size = max(18, int(round(word_box_h * 0.45)))
+        _draw_unicode_text(
+            canvas,
+            active_emoji,
+            word_box_x + word_box_w - max(16, int(round(word_box_w * 0.10))),
+            word_box_y + max(14, int(round(word_box_h * 0.34))),
+            font_size=emoji_size,
+            color=mcd_red,
+            anchor="mm",
+        )
 
     sub_scale = _fit_text_scale(
         subline,
@@ -549,11 +610,16 @@ def draw_demo_ui(
     sx0, sy0, sw0, sh0 = layout.sentence_card
     _rounded_card(canvas, sx0, sy0, sw0, sh0, card_bg, r=14)
     sentence_pad_x = max(8, int(round(sw0 * 0.035)))
-    _draw_card_title(canvas, "Order summary", sx0 + sentence_pad_x, sy0 + max(18, int(round(sh0 * 0.16))))
+    _draw_card_title(canvas, "Translation box", sx0 + sentence_pad_x, sy0 + max(18, int(round(sh0 * 0.16))))
 
     sentence_clean = (sentence_text or "").strip() or "(empty)"
-    content_top = sy0 + max(34, int(round(sh0 * 0.24)))
-    content_bottom = sy0 + sh0 - max(8, int(round(sh0 * 0.06)))
+    detected_token = (confirmed_token or live_token or "").strip().lower()
+    detected_food_emoji = _food_emoji(detected_token)
+    detected_strip_h = max(0, int(round(sh0 * 0.15))) if detected_food_emoji else 0
+    content_top = sy0 + max(34, int(round(sh0 * 0.24))) + detected_strip_h
+    food_items = _food_tokens(sentence_tokens)
+    food_block_h = max(0, int(round(sh0 * 0.18))) if food_items else 0
+    content_bottom = sy0 + sh0 - max(8, int(round(sh0 * 0.06))) - food_block_h
     content_h = max(24, content_bottom - content_top)
     lines, sent_scale, line_h = _fit_multiline_sentence(
         sentence_clean,
@@ -569,6 +635,66 @@ def draw_demo_ui(
         if ly > content_bottom:
             break
         cv2.putText(canvas, line, (content_left, ly), cv2.FONT_HERSHEY_SIMPLEX, sent_scale, text_dark, 1, cv2.LINE_AA)
+
+    if detected_food_emoji:
+        det_strip_w = sw0 - (sentence_pad_x * 2)
+        det_strip_y = sy0 + max(30, int(round(sh0 * 0.22)))
+        det_strip_h2 = max(24, detected_strip_h - 6)
+        _rounded_card(canvas, sx0 + sentence_pad_x, det_strip_y, det_strip_w, det_strip_h2, (238, 247, 255), r=10)
+
+        thumb_h = max(20, det_strip_h2 - 6)
+        thumb_w = int(round(thumb_h * 1.35))
+        thumb_x = sx0 + sentence_pad_x + det_strip_w - thumb_w - 4
+        thumb_y = det_strip_y + (det_strip_h2 - thumb_h) // 2
+
+        photo = _load_food_photo(detected_token, target_w=thumb_w, target_h=thumb_h)
+        text_right_bound = thumb_x - 8 if photo is not None else sx0 + sentence_pad_x + det_strip_w - 8
+        text_max_px = max(90, text_right_bound - (sx0 + sentence_pad_x + 10))
+        detected_text = f"Now detected: {detected_food_emoji} {detected_token.replace('_', ' ')}"
+
+        # Keep text readable when a photo thumbnail is shown.
+        preview_font = max(13, int(round(det_strip_h2 * 0.52)))
+        while preview_font > 10:
+            if Image is not None and ImageDraw is not None and ImageFont is not None:
+                break
+            tw = cv2.getTextSize(detected_text, cv2.FONT_HERSHEY_SIMPLEX, preview_font / 22.0, 1)[0][0]
+            if tw <= text_max_px:
+                break
+            preview_font -= 1
+
+        _draw_unicode_text(
+            canvas,
+            detected_text,
+            sx0 + sentence_pad_x + 10,
+            det_strip_y + det_strip_h2 // 2,
+            font_size=preview_font,
+            color=mcd_red,
+            anchor="lm",
+        )
+
+        if photo is not None:
+            canvas[thumb_y : thumb_y + thumb_h, thumb_x : thumb_x + thumb_w] = photo
+            cv2.rectangle(canvas, (thumb_x, thumb_y), (thumb_x + thumb_w, thumb_y + thumb_h), (255, 255, 255), 2)
+            cv2.rectangle(canvas, (thumb_x, thumb_y), (thumb_x + thumb_w, thumb_y + thumb_h), mcd_red, 1)
+
+    if food_items:
+        strip_h = max(26, int(round(sh0 * 0.16)))
+        strip_y = sy0 + sh0 - strip_h - max(6, int(round(sh0 * 0.04)))
+        _rounded_card(canvas, sx0 + sentence_pad_x, strip_y, sw0 - (sentence_pad_x * 2), strip_h, (238, 247, 255), r=10)
+
+        preview = food_items[:3]
+        food_text = "  ".join(f"{emoji} {name.replace('_', ' ')}" for name, emoji in preview)
+        if len(food_items) > 3:
+            food_text += "  +more"
+        _draw_unicode_text(
+            canvas,
+            food_text,
+            sx0 + sentence_pad_x + 10,
+            strip_y + strip_h // 2,
+            font_size=max(16, int(round(strip_h * 0.50))),
+            color=mcd_red,
+            anchor="lm",
+        )
 
     # 3) Order confirmation card
     ax0, ay0, aw0, ah0 = layout.order_card
@@ -587,8 +713,8 @@ def draw_demo_ui(
 
     if state == "sent":
         sent_badge_w = min(max(96, int(round(aw0 * 0.40))), aw0 - (order_pad_x * 2) - next_badge_w - 8)
-        _draw_badge(canvas, "ORDER SENT", ax0 + order_pad_x, badge_y, sent_badge_w, badge_h, (74, 138, 78), (248, 250, 252))
-        _draw_badge(canvas, next_order_num, ax0 + aw0 - order_pad_x - next_badge_w, badge_y, next_badge_w, badge_h, accent_tomato, (248, 250, 252))
+        _draw_badge(canvas, "ORDER SENT", ax0 + order_pad_x, badge_y, sent_badge_w, badge_h, mcd_green, (255, 255, 255))
+        _draw_badge(canvas, next_order_num, ax0 + aw0 - order_pad_x - next_badge_w, badge_y, next_badge_w, badge_h, mcd_red, (255, 255, 255))
         info_bottom = layout.new_order_button[1] - max(6, int(round(ah0 * 0.05)))
         sent_lines = ["Your order has been sent.", kitchen_status]
         baseline = detail_top
@@ -608,7 +734,7 @@ def draw_demo_ui(
             baseline += detail_step
         _draw_button(canvas, layout.new_order_button, "Start New Order", True, primary=False)
     elif state == "ready":
-        _draw_badge(canvas, f"Next: {next_order_num}", ax0 + order_pad_x, badge_y, next_badge_w, badge_h, accent_tomato, (248, 250, 252))
+        _draw_badge(canvas, f"Next: {next_order_num}", ax0 + order_pad_x, badge_y, next_badge_w, badge_h, mcd_red, (255, 255, 255))
         details = [
             "Tap Confirm Order to send to kitchen.",
             "Order summary will be frozen.",
@@ -633,7 +759,7 @@ def draw_demo_ui(
             baseline += detail_step
         _draw_button(canvas, layout.confirm_button, "Confirm Order", True, primary=True)
     else:
-        _draw_badge(canvas, f"Next: {next_order_num}", ax0 + order_pad_x, badge_y, next_badge_w, badge_h, accent_tomato, (248, 250, 252))
+        _draw_badge(canvas, f"Next: {next_order_num}", ax0 + order_pad_x, badge_y, next_badge_w, badge_h, mcd_red, (255, 255, 255))
         details = [
             "Tap Confirm Order to send to kitchen.",
             "Order summary will be frozen.",
@@ -659,7 +785,7 @@ def draw_demo_ui(
 
     # 4) Controls/help footer card
     fx0, fy0, fw0, fh0 = layout.controls_card
-    _rounded_card(canvas, fx0, fy0, fw0, fh0, (236, 229, 214), r=12)
+    _rounded_card(canvas, fx0, fy0, fw0, fh0, (235, 241, 255), r=12)
     controls_pad_x = max(8, int(round(fw0 * 0.035)))
     if fh0 >= 50:
         _draw_card_title(canvas, "Menu board & controls", fx0 + controls_pad_x, fy0 + max(16, int(round(fh0 * 0.34))))
@@ -672,7 +798,7 @@ def draw_demo_ui(
 
     if fh0 >= 60:
         footer_lines = [
-            "Menu: hamburger, fries, hash brown, apple pie",
+            "Menu: 🍔 hamburger  🍟 fries  🥔 hash brown  🥧 apple pie",
             "X reset | Z undo | C confirm | N new order | Enter speak | Q/ESC quit",
         ]
     else:

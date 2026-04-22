@@ -144,7 +144,7 @@ Repeat collection for each label.
 ## 3) Train model (GRU)
 
 ```bash
-python src/train/train_gru.py --data data/raw/landmarks_sequences_round1.csv --window-size 20 --epochs 40 --batch-size 32 --feature-mode hands_pose
+python src/train/train_gru.py --data data/raw/landmarks_sequences.csv --window-size 20 --epochs 40 --batch-size 32 --feature-mode hands_pose
 ```
 
 Outputs:
@@ -156,7 +156,7 @@ Outputs:
 ## 4) Evaluate model
 
 ```bash
-python src/eval/evaluate_gru.py --data data/raw/landmarks_sequences_round1.csv --window-size 20 --feature-mode hands_pose
+python src/eval/evaluate_gru.py --data data/raw/landmarks_sequences.csv --window-size 20 --feature-mode hands_pose
 ```
 
 Outputs in `data/processed/eval_reports/`:
@@ -223,7 +223,7 @@ Notes:
 
 ## Explicit data-path discipline (important)
 
-To avoid mixing datasets (e.g., `landmarks_sequences.csv` vs `landmarks_sequences_round1.csv`), always pass `--data` explicitly in both training and evaluation.
+To avoid mixing datasets (e.g., `landmarks_sequences.csv` vs `landmarks_sequences.csv`), always pass `--data` explicitly in both training and evaluation.
 
 - Good: train and eval both point to the same explicit dataset path
 - Avoid: relying on defaults when multiple sequence CSVs exist

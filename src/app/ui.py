@@ -539,6 +539,13 @@ def draw_demo_ui(
     cv2.rectangle(canvas, (panel_x, 0), (w, h), panel_bg, -1)
     cv2.line(canvas, (panel_x, 0), (panel_x, h), mcd_red, 3)
 
+    # Fast-food storefront trim (top and bottom accent rails)
+    rail_h = max(8, int(round(h * 0.018)))
+    cv2.rectangle(canvas, (panel_x, 0), (w, rail_h), (58, 88, 178), -1)
+    cv2.rectangle(canvas, (panel_x, rail_h), (w, rail_h + 3), (92, 150, 238), -1)
+    cv2.rectangle(canvas, (panel_x, h - rail_h), (w, h), (58, 88, 178), -1)
+    cv2.rectangle(canvas, (panel_x, h - rail_h - 3), (w, h - rail_h), (92, 150, 238), -1)
+
     # Header strip
     _rounded_card(canvas, *layout.header, card_bg, r=12)
     hx, hy, hw, hh = layout.header
@@ -575,6 +582,15 @@ def draw_demo_ui(
     )
     sub_y = hy + max(30, int(round(hh * 0.74)))
     cv2.putText(canvas, subtitle, (hx + header_pad_x, sub_y), cv2.FONT_HERSHEY_SIMPLEX, sub_scale, text_muted, 1, cv2.LINE_AA)
+    _draw_unicode_text(
+        canvas,
+        "🍔  🍟  🥤",
+        hx + hw - max(20, int(round(hw * 0.18))),
+        sub_y - 1,
+        font_size=max(10, int(round(hh * 0.22))),
+        color=mcd_red,
+        anchor="mm",
+    )
     # 1) Current detected word card
     wx0, wy0, ww0, wh0 = layout.word_card
     _rounded_card(canvas, wx0, wy0, ww0, wh0, card_bg, r=14)
@@ -694,27 +710,26 @@ def draw_demo_ui(
     emoji_tokens = [
         _food_emoji(tk) for tk in sentence_tokens if _food_emoji(tk)
     ]
-    if emoji_tokens:
-        emoji_line = "EMOJI: " + " ".join(emoji_tokens[:4])
-        emoji_scale = _fit_text_scale(
-            emoji_line,
-            target_px=max(10, int(round(sh0 * 0.12))),
-            max_width=sw0 - (sentence_pad_x * 2),
-            max_height=max(10, int(round(sh0 * 0.16))),
-            thickness=1,
-            min_scale=0.30,
-            max_scale=0.62,
-        )
-        cv2.putText(
-            canvas,
-            emoji_line,
-            (sx0 + sentence_pad_x, sy0 + sh0 - max(8, int(round(sh0 * 0.10)))),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            emoji_scale,
-            text_dark,
-            1,
-            cv2.LINE_AA,
-        )
+    emoji_line = "EMOJI: " + (" ".join(emoji_tokens[:4]) if emoji_tokens else "🍔 🍟 🥤")
+    emoji_scale = _fit_text_scale(
+        emoji_line,
+        target_px=max(10, int(round(sh0 * 0.12))),
+        max_width=sw0 - (sentence_pad_x * 2),
+        max_height=max(10, int(round(sh0 * 0.16))),
+        thickness=1,
+        min_scale=0.30,
+        max_scale=0.62,
+    )
+    cv2.putText(
+        canvas,
+        emoji_line,
+        (sx0 + sentence_pad_x, sy0 + sh0 - max(8, int(round(sh0 * 0.10)))),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        emoji_scale,
+        text_dark,
+        1,
+        cv2.LINE_AA,
+    )
 
     # Intentionally show only final sentence text in this card.
 
@@ -732,6 +747,15 @@ def draw_demo_ui(
 
     state = "sent" if order_confirmed else ("ready" if confirm_enabled else "detecting")
     _draw_card_title(canvas, "ORDER CONFIRMATION", ax0 + order_pad_x, title_y)
+    _draw_unicode_text(
+        canvas,
+        "🍽️",
+        ax0 + aw0 - max(16, int(round(aw0 * 0.08))),
+        title_y - 2,
+        font_size=max(11, int(round(ah0 * 0.12))),
+        color=mcd_red,
+        anchor="mm",
+    )
 
     if state == "sent":
         sent_badge_w = min(max(128, int(round(aw0 * 0.58))), aw0 - (order_pad_x * 2) - next_badge_w - 8)

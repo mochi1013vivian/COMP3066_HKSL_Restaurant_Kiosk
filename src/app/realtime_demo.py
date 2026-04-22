@@ -7,6 +7,8 @@ Low-latency presentation mode available for real-time demonstrations.
 from __future__ import annotations
 
 import argparse
+import queue
+import threading
 import time
 from collections import Counter, deque
 from dataclasses import fields
@@ -30,7 +32,15 @@ try:
     )
     from ..features.sequence_preprocess import normalize_sequence
     from ..models.gru_classifier import GRUClassifier
-    from ..utils.audio_feedback import play_accept_sound, play_confirmation_sound, speak_text
+    from ..utils.audio_feedback import (
+        normalize_waiter_phrase,
+        play_accept_sound,
+        play_confirmation_sound,
+        recognize_speech_once,
+        recognize_speech_once_verbose,
+        speech_backend_status,
+        speak_text,
+    )
     from .sentence_builder import OrderSentenceBuilder
     from .ui import compute_demo_layout, draw_demo_ui
 except ImportError:  # pragma: no cover
@@ -57,7 +67,15 @@ except ImportError:  # pragma: no cover
     )
     from features.sequence_preprocess import normalize_sequence
     from models.gru_classifier import GRUClassifier
-    from utils.audio_feedback import play_accept_sound, play_confirmation_sound, speak_text
+    from utils.audio_feedback import (
+        normalize_waiter_phrase,
+        play_accept_sound,
+        play_confirmation_sound,
+        recognize_speech_once,
+        recognize_speech_once_verbose,
+        speech_backend_status,
+        speak_text,
+    )
     from sentence_builder import OrderSentenceBuilder
     from ui import compute_demo_layout, draw_demo_ui
 
@@ -84,6 +102,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--camera-width", type=int, default=0, help="Camera width (0=auto, 1280 normal, 640 presentation)")
     parser.add_argument("--camera-height", type=int, default=0, help="Camera height (0=auto, 720 normal, 480 presentation)")
     parser.add_argument("--tts", action="store_true", help="Enable text-to-speech on Enter key")
+    parser.add_argument("--speech-recognition", action="store_true", help="Enable microphone speech-to-text (press V to listen)")
+    parser.add_argument("--speech-timeout", type=float, default=4.0, help="Seconds to wait for user speech start")
+    parser.add_argument("--speech-phrase-limit", type=float, default=6.0, help="Max seconds per speech utterance")
     parser.add_argument("--debug-ui", action="store_true", help="Enable instrumented UI/debug logs and hardcoded panel markers")
     parser.add_argument(
         "--show-pose-debug",
@@ -201,6 +222,77 @@ def main() -> None:
     display_live_conf: float = 0.0
     display_confirmed_token: Optional[str] = None
     display_confirmed_count: int = 0
+
+    # ── Speech recognition state (updated by background thread) ──────
+    _speech_lock = threading.Lock()
+    _speech_state = {
+        "status": "Speech OFF",
+        "transcript": "",
+        "matched": "",
+    }
+    _speech_stop = threading.Event()
+
+    def _speech_worker() -> None:
+        """Continuously listens for speech and updates _speech_state."""
+        try:
+            import speech_recognition as sr  # type: ignore
+        except ImportError:
+            with _speech_lock:
+                _speech_state["status"] = "SpeechRecognition not installed"
+            return
+
+        recognizer = sr.Recognizer()
+        recognizer.dynamic_energy_threshold = True
+        recognizer.pause_threshold = 0.7
+
+        try:
+            mic = sr.Microphone()
+        except Exception as exc:
+            with _speech_lock:
+                _speech_state["status"] = f"No mic: {exc}"
+            return
+
+        with mic as source:
+            recognizer.adjust_for_ambient_noise(source, duration=0.5)
+
+        with _speech_lock:
+            _speech_state["status"] = "Listening"
+
+        while not _speech_stop.is_set():
+            try:
+                with mic as source:
+                    audio = recognizer.listen(
+                        source,
+                        timeout=args.speech_timeout,
+                        phrase_time_limit=args.speech_phrase_limit,
+                    )
+                text = recognizer.recognize_google(audio).strip()
+                if text:
+                    matched = normalize_waiter_phrase(text)
+                    with _speech_lock:
+                        _speech_state["transcript"] = text
+                        _speech_state["matched"] = matched or ""
+                        _speech_state["status"] = f"Detected: {matched}" if matched else "Listening"
+                    if matched:
+                        speak_text(matched)
+            except sr.WaitTimeoutError:
+                with _speech_lock:
+                    _speech_state["status"] = "Listening"
+            except sr.UnknownValueError:
+                with _speech_lock:
+                    _speech_state["status"] = "Speech not detected"
+            except sr.RequestError as exc:
+                with _speech_lock:
+                    _speech_state["status"] = f"Service error: {exc}"
+            except Exception as exc:
+                with _speech_lock:
+                    _speech_state["status"] = f"Error: {exc}"
+
+    if args.speech_recognition:
+        _t = threading.Thread(target=_speech_worker, daemon=True)
+        _t.start()
+        # Imitate waiter initiating conversation.
+        speak_text("What can I help you?")
 
     def reset_live_order_state() -> None:
         nonlocal sentence, frame_buffer, pred_history
@@ -415,7 +507,7 @@ def main() -> None:
 
             mode_label = "PRESENTATION (low-latency)" if args.presentation_mode else "NORMAL"
             status_lines = [
-                f"Mode: {mode_label}  |  Controls: X=reset | C=confirm | N=new order | Enter=speak | Q/ESC=quit",
+                f"Mode: {mode_label}  |  Controls: X=reset | C=confirm | N=new order | V=voice STT | Enter=speak | Q/ESC=quit",
                 f"No-sign frames: {no_sign_frame_count}/{args.no_sign_frames}  |  Cooldown: {max(0, args.accept_cooldown - (now - last_accept_ts)):.1f}s",
                 f"Features: {feature_mode}",
             ]
@@ -428,6 +520,8 @@ def main() -> None:
                 )
 
             # IMPORTANT: use returned composed frame for display (camera + right panel)
+            with _speech_lock:
+                _cur_speech = dict(_speech_state)
             frame = draw_demo_ui(
                 frame,
                 live_token=display_live_token,
@@ -445,6 +539,9 @@ def main() -> None:
                 kitchen_status="Kitchen status: sent to kitchen" if order_confirmed else "Kitchen status: awaiting confirmation",
                 confirm_enabled=bool(sentence.tokens) and not order_confirmed,
                 debug_ui=args.debug_ui,
+                speech_status=_cur_speech["status"],
+                speech_transcript=_cur_speech["transcript"],
+                speech_matched=_cur_speech["matched"],
             )
 
             mouse_state["layout"] = compute_demo_layout(frame.shape)
@@ -470,6 +567,9 @@ def main() -> None:
                     kitchen_status="Kitchen status: sent to kitchen" if order_confirmed else "Kitchen status: awaiting confirmation",
                     confirm_enabled=bool(sentence.tokens) and not order_confirmed,
                     debug_ui=args.debug_ui,
+                    speech_status=_cur_speech["status"],
+                    speech_transcript=_cur_speech["transcript"],
+                    speech_matched=_cur_speech["matched"],
                 )
 
             if args.debug_ui:
@@ -496,7 +596,7 @@ def main() -> None:
                     )
 
             cv2.imshow(window_name, frame)
-            
+
             key = cv2.waitKey(1) & 0xFF
             if key in (ord("q"), 27):  # Q or ESC
                 break
@@ -517,6 +617,7 @@ def main() -> None:
             
             frame_count += 1
 
+    _speech_stop.set()
     cap.release()
     cv2.destroyAllWindows()
 

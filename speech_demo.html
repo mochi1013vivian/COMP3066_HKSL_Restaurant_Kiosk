@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Waiter Speech Recognition</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #1a1a2e;
+      color: #f0f0f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      gap: 1.5rem;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      letter-spacing: 0.04em;
+      color: #e0e0e0;
+      text-align: center;
+    }
+
+    /* ── Status pill ─────────────────────────────────────────── */
+    #status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1.1rem;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      transition: background 0.3s, color 0.3s;
+    }
+    #status-pill.listening  { background: #1b4332; color: #52d68a; border: 1.5px solid #52d68a; }
+    #status-pill.stopped    { background: #3b1f1f; color: #f87171; border: 1.5px solid #f87171; }
+    #status-pill.no-speech  { background: #2d2d00; color: #facc15; border: 1.5px solid #facc15; }
+
+    .dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .dot.pulse {
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    /* ── Main card ───────────────────────────────────────────── */
+    #transcript-card {
+      width: 100%;
+      max-width: 680px;
+      background: #16213e;
+      border: 1.5px solid #2a2a5a;
+      border-radius: 16px;
+      padding: 1.5rem 1.8rem;
+      min-height: 110px;
+      transition: border-color 0.3s;
+    }
+    #transcript-card.matched {
+      border-color: #52d68a;
+      background: #0d2b1e;
+    }
+
+    #transcript-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #888;
+      margin-bottom: 0.6rem;
+    }
+
+    #transcript-text {
+      font-size: 1.25rem;
+      line-height: 1.6;
+      color: #d0d0d0;
+      min-height: 2em;
+      word-break: break-word;
+    }
+    #transcript-text.interim {
+      color: #888;
+      font-style: italic;
+    }
+
+    /* ── Matched phrase banner ───────────────────────────────── */
+    #match-banner {
+      display: none;
+      width: 100%;
+      max-width: 680px;
+      background: linear-gradient(135deg, #064e3b, #065f46);
+      border: 2px solid #52d68a;
+      border-radius: 14px;
+      padding: 1.1rem 1.6rem;
+      text-align: center;
+    }
+    #match-banner.visible { display: block; animation: pop 0.25s ease; }
+    @keyframes pop {
+      0%   { transform: scale(0.94); opacity: 0; }
+      100% { transform: scale(1);    opacity: 1; }
+    }
+    #match-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #6ee7b7;
+      margin-bottom: 0.4rem;
+    }
+    #match-phrase {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #a7f3d0;
+    }
+
+    /* ── Target phrases list ─────────────────────────────────── */
+    #phrases-card {
+      width: 100%;
+      max-width: 680px;
+      background: #16213e;
+      border: 1.5px solid #2a2a5a;
+      border-radius: 14px;
+      padding: 1.1rem 1.6rem;
+    }
+    #phrases-card h2 {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #888;
+      margin-bottom: 0.7rem;
+    }
+    .phrase-chip {
+      display: inline-block;
+      background: #0f3460;
+      border: 1px solid #2a4a80;
+      border-radius: 8px;
+      padding: 0.35rem 0.85rem;
+      margin: 0.25rem 0.3rem 0.25rem 0;
+      font-size: 0.92rem;
+      color: #93c5fd;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .phrase-chip.active {
+      background: #065f46;
+      border-color: #52d68a;
+      color: #a7f3d0;
+    }
+
+    /* ── Button ──────────────────────────────────────────────── */
+    #toggle-btn {
+      padding: 0.7rem 2.2rem;
+      border-radius: 999px;
+      border: none;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    #toggle-btn.start { background: #52d68a; color: #0a2e1a; }
+    #toggle-btn.stop  { background: #f87171; color: #2d0000; }
+    #toggle-btn:active { transform: scale(0.96); }
+
+    #error-msg {
+      font-size: 0.85rem;
+      color: #f87171;
+      text-align: center;
+      min-height: 1.2em;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎙 Waiter Speech Recognition</h1>
+
+  <div id="status-pill" class="stopped">
+    <span class="dot" id="status-dot"></span>
+    <span id="status-text">Stopped</span>
+  </div>
+
+  <div id="transcript-card">
+    <div id="transcript-label">Live Transcript</div>
+    <div id="transcript-text">Press <strong>Start Listening</strong> and begin speaking…</div>
+  </div>
+
+  <div id="match-banner">
+    <div id="match-label">✔ Phrase Detected</div>
+    <div id="match-phrase"></div>
+  </div>
+
+  <div id="phrases-card">
+    <h2>Target Phrases</h2>
+    <span class="phrase-chip" data-phrase="No problem">No problem</span>
+    <span class="phrase-chip" data-phrase="What can I help you?">What can I help you?</span>
+    <span class="phrase-chip" data-phrase="How would you like to pay?">How would you like to pay?</span>
+  </div>
+
+  <button id="toggle-btn" class="start">Start Listening</button>
+  <div id="error-msg"></div>
+
+<script>
+  // ── Target phrase matcher ──────────────────────────────────────────
+  const TARGETS = [
+    {
+      label: "No problem",
+      patterns: [/no\s+problem/i, /not\s+a\s+problem/i, /\bsure\b/i],
+    },
+    {
+      label: "What can I help you?",
+      patterns: [
+        /what\s+can\s+i\s+help\s+you/i,
+        /how\s+can\s+i\s+help\s+you/i,
+        /how\s+may\s+i\s+help\s+you/i,
+      ],
+    },
+    {
+      label: "How would you like to pay?",
+      patterns: [
+        /how\s+would\s+you\s+like\s+to\s+pay/i,
+        /how\s+do\s+you\s+(want|like)\s+to\s+pay/i,
+        /how\s+are\s+you\s+paying/i,
+        /cash\s+or\s+card/i,
+        /method\s+of\s+payment/i,
+      ],
+    },
+  ];
+
+  function matchPhrase(text) {
+    for (const target of TARGETS) {
+      if (target.patterns.some(re => re.test(text))) return target.label;
+    }
+    return null;
+  }
+
+  // ── DOM refs ───────────────────────────────────────────────────────
+  const statusPill   = document.getElementById("status-pill");
+  const statusDot    = document.getElementById("status-dot");
+  const statusText   = document.getElementById("status-text");
+  const transcriptCard = document.getElementById("transcript-card");
+  const transcriptEl  = document.getElementById("transcript-text");
+  const matchBanner   = document.getElementById("match-banner");
+  const matchPhrase   = document.getElementById("match-phrase");
+  const toggleBtn     = document.getElementById("toggle-btn");
+  const errorMsg      = document.getElementById("error-msg");
+  const chips         = document.querySelectorAll(".phrase-chip");
+
+  // ── State ──────────────────────────────────────────────────────────
+  let recognition = null;
+  let running     = false;
+  let matchClearTimer = null;
+
+  // ── Status helpers ─────────────────────────────────────────────────
+  function setStatus(state) {
+    statusPill.className = "";
+    statusDot.classList.toggle("pulse", state === "listening");
+    if (state === "listening") {
+      statusPill.classList.add("listening");
+      statusText.textContent = "Listening";
+    } else if (state === "no-speech") {
+      statusPill.classList.add("no-speech");
+      statusText.textContent = "Speech not detected";
+    } else {
+      statusPill.classList.add("stopped");
+      statusText.textContent = "Stopped";
+    }
+  }
+
+  function highlightChip(label) {
+    chips.forEach(c => c.classList.toggle("active", c.dataset.phrase === label));
+  }
+  function clearChips() { chips.forEach(c => c.classList.remove("active")); }
+
+  function showMatch(label) {
+    matchPhrase.textContent = `"${label}"`;
+    matchBanner.classList.add("visible");
+    transcriptCard.classList.add("matched");
+    highlightChip(label);
+
+    clearTimeout(matchClearTimer);
+    matchClearTimer = setTimeout(() => {
+      matchBanner.classList.remove("visible");
+      transcriptCard.classList.remove("matched");
+      clearChips();
+    }, 4000);
+  }
+
+  function displayTranscript(text, isInterim) {
+    transcriptEl.textContent = text || "";
+    transcriptEl.className = isInterim ? "interim" : "";
+  }
+
+  // ── SpeechRecognition setup ────────────────────────────────────────
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    errorMsg.textContent =
+      "⚠ Web Speech API not supported. Use Chrome or Edge.";
+    toggleBtn.disabled = true;
+  }
+
+  function buildRecognition() {
+    const r = new SpeechRecognition();
+    r.lang = "en-US";
+    r.continuous = true;
+    r.interimResults = true;
+    r.maxAlternatives = 1;
+
+    r.onstart = () => {
+      setStatus("listening");
+      errorMsg.textContent = "";
+    };
+
+    r.onresult = (event) => {
+      let interim = "";
+      let finalText = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalText += t;
+        } else {
+          interim += t;
+        }
+      }
+
+      if (finalText) {
+        displayTranscript(finalText, false);
+        const matched = matchPhrase(finalText);
+        if (matched) {
+          showMatch(matched);
+        } else {
+          matchBanner.classList.remove("visible");
+          transcriptCard.classList.remove("matched");
+          clearChips();
+        }
+      } else {
+        displayTranscript(interim, true);
+      }
+    };
+
+    r.onspeechend = () => {
+      // keep running — continuous mode restarts naturally
+    };
+
+    r.onnomatch = () => {
+      setStatus("no-speech");
+    };
+
+    r.onerror = (event) => {
+      if (event.error === "no-speech") {
+        setStatus("no-speech");
+        return; // auto-resumes via onend
+      }
+      if (event.error === "aborted") return;
+      errorMsg.textContent = `⚠ Error: ${event.error}`;
+      stopListening();
+    };
+
+    r.onend = () => {
+      // Auto-restart in continuous mode unless deliberately stopped
+      if (running) {
+        try { r.start(); } catch (_) {}
+      } else {
+        setStatus("stopped");
+        toggleBtn.textContent = "Start Listening";
+        toggleBtn.className   = "start";
+      }
+    };
+
+    return r;
+  }
+
+  function startListening() {
+    if (!SpeechRecognition) return;
+    running = true;
+    recognition = buildRecognition();
+    recognition.start();
+    toggleBtn.textContent = "Stop Listening";
+    toggleBtn.className   = "stop";
+    displayTranscript("Listening — go ahead and speak…", false);
+  }
+
+  function stopListening() {
+    running = false;
+    if (recognition) {
+      recognition.abort();
+      recognition = null;
+    }
+    setStatus("stopped");
+    toggleBtn.textContent = "Start Listening";
+    toggleBtn.className   = "start";
+  }
+
+  toggleBtn.addEventListener("click", () => {
+    running ? stopListening() : startListening();
+  });
+
+  // Keyboard shortcut: Space to toggle
+  document.addEventListener("keydown", (e) => {
+    if (e.code === "Space" && e.target === document.body) {
+      e.preventDefault();
+      running ? stopListening() : startListening();
+    }
+  });
+</script>
+</body>
+</html>

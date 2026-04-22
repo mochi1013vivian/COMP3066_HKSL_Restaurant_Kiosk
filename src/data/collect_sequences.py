@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import argparse
 import csv
+import queue
+import threading
 import time
 from pathlib import Path
 from typing import List
@@ -58,6 +60,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, default=DEFAULT_SEQUENCE_CSV)
     parser.add_argument("--camera-index", type=int, default=1)
     parser.add_argument("--countdown", type=float, default=3.0)
+    parser.add_argument(
+        "--voice-control",
+        action="store_true",
+        help='Enable voice commands: say "start" to arm, "stop" to cancel, "quit" to exit.',
+    )
     parser.add_argument("--cooldown", type=float, default=0.25)
     parser.add_argument("--min-detection-confidence", type=float, default=0.5)
     parser.add_argument("--min-tracking-confidence", type=float, default=0.5)
@@ -105,6 +112,43 @@ def parse_args() -> argparse.Namespace:
         help="Minimum active-motion frames required to accept a segmented sample.",
     )
     return parser.parse_args()
+
+
+def _voice_listener(cmd_queue: "queue.Queue[str]", stop_event: threading.Event) -> None:
+    """Background thread: push 'start', 'stop', or 'quit' into cmd_queue on voice command."""
+    try:
+        import speech_recognition as sr  # type: ignore
+    except ImportError:
+        print("[voice-control] SpeechRecognition not installed. Run: pip install SpeechRecognition pyaudio")
+        return
+
+    recognizer = sr.Recognizer()
+    try:
+        mic = sr.Microphone()
+    except Exception as exc:
+        print(f"[voice-control] No microphone found: {exc}")
+        return
+
+    print("[voice-control] Listening. Say 'start', 'stop', or 'quit'.")
+    with mic as source:
+        recognizer.adjust_for_ambient_noise(source, duration=1)
+
+    while not stop_event.is_set():
+        try:
+            with mic as source:
+                audio = recognizer.listen(source, timeout=5, phrase_time_limit=3)
+            text = recognizer.recognize_google(audio).lower().strip()
+            print(f"[voice-control] Heard: {text!r}")
+            for cmd in ("start", "stop", "quit"):
+                if cmd in text:
+                    cmd_queue.put(cmd)
+                    break
+        except sr.WaitTimeoutError:
+            pass
+        except sr.UnknownValueError:
+            pass
+        except Exception as exc:
+            print(f"[voice-control] Error: {exc}")
 
 
 def ensure_csv_header(path: Path, window_size: int, feature_mode: str) -> None:
@@ -187,6 +231,13 @@ def main() -> None:
         min_pose_tracking_confidence=args.min_pose_tracking_confidence,
         pose_visibility_threshold=args.pose_visibility_threshold,
     )
+
+    # Voice control setup
+    voice_queue: "queue.Queue[str]" = queue.Queue()
+    voice_stop = threading.Event()
+    if args.voice_control:
+        vt = threading.Thread(target=_voice_listener, args=(voice_queue, voice_stop), daemon=True)
+        vt.start()
 
     collected = 0
     is_armed = False
@@ -343,9 +394,10 @@ def main() -> None:
                     2,
                 )
 
+            controls_hint = "C/[start]: arm  S/[stop]: cancel  Q/[quit]: exit" if args.voice_control else "C: start session  S: stop session  Q: quit"
             cv2.putText(
                 frame,
-                "C: start session  S: stop session  Q: quit",
+                controls_hint,
                 (20, frame.shape[0] - 20),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.7,
@@ -356,12 +408,19 @@ def main() -> None:
             cv2.imshow("Collect HKSL Sequences", frame)
             key = cv2.waitKey(1) & 0xFF
 
-            if key == ord("q"):
+            # Drain voice commands (non-blocking)
+            voice_cmd: str | None = None
+            try:
+                voice_cmd = voice_queue.get_nowait()
+            except queue.Empty:
+                pass
+
+            if key == ord("q") or voice_cmd == "quit":
                 break
-            if key == ord("c") and not is_armed and not is_recording:
+            if (key == ord("c") or voice_cmd == "start") and not is_armed and not is_recording:
                 is_armed = True
                 countdown_start_ts = time.time()
-            if key == ord("s"):
+            if key == ord("s") or voice_cmd == "stop":
                 is_armed = False
                 is_recording = False
                 frame_buffer.clear()
@@ -376,6 +435,7 @@ def main() -> None:
                 is_recording = False
                 is_armed = False
 
+    voice_stop.set()
     cap.release()
     cv2.destroyAllWindows()
     print(f"Saved {collected} sequence samples for label '{args.label}' to {output_path} | feature_mode={feature_mode}")

@@ -1,4 +1,2 @@
-four -> i: 1
 four -> three: 1
-four -> want: 1
-three -> five: 1
+three -> four: 1

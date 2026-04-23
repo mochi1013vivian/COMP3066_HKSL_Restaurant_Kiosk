@@ -1,3 +1,9 @@
+> **Archived draft notice**
+>
+> This file is an older proposal draft and is **not the authoritative project definition anymore**.
+> The active proposal direction is documented in `project_proposal_final.md`.
+> This draft includes earlier ideas such as A-Z / 0-9 recognition and speech-recognition components that are no longer part of the core coursework scope.
+
 COMP3066 Group Project Proposal 
 
 Instructor: Prof. GUO Xiaoqing & Dr. ZHANG Ce 

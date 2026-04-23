@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
-REPORT_DIR = PROCESSED_DATA_DIR / "eval_reports"
+REPORT_DIR = PROCESSED_DATA_DIR / "eval_reports_active_baseline"
 BACKUP_DIR = DATA_DIR / "backups"
 
 MODELS_DIR = PROJECT_ROOT / "models"

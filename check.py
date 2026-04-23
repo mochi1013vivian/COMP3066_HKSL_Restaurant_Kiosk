@@ -1,9 +1,30 @@
+"""Safe dataset sanity-check utility (non-destructive).
+
+Usage:
+	python check.py
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
 import pandas as pd
 
-df = pd.read_csv('data/raw/landmarks_sequences.csv')
 
-# Drop all four and three rows
-df_cleaned = df[~df['label'].isin(['four', 'three'])]
-df_cleaned.to_csv('data/raw/landmarks_sequences.csv', index=False)
+def main() -> None:
+	target = Path("data/raw/landmarks_sequences_submission_hands_pose.csv")
+	if not target.exists():
+		raise FileNotFoundError(f"Dataset not found: {target}")
 
-print(df_cleaned['label'].value_counts())
+	df = pd.read_csv(target)
+	if "label" not in df.columns:
+		raise ValueError("Missing required 'label' column in dataset")
+
+	print(f"Dataset: {target}")
+	print(f"Rows: {len(df)}")
+	print("Label distribution:")
+	print(df["label"].value_counts())
+
+
+if __name__ == "__main__":
+	main()

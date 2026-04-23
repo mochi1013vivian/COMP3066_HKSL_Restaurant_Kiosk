@@ -1,2 +1,9 @@
 /.venv
 /CLEANUP_LOG.md
+/mcp-server
+/.github
+
+# Environment variable files
+.env
+.env.*
+!.env.example

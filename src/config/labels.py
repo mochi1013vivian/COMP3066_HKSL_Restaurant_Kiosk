@@ -1,6 +1,6 @@
-"""Closed-domain HKSL restaurant vocabulary definitions.
+"""Closed-domain HKSL restaurant-ordering vocabulary definitions.
 
-Expanded for both deaf customer food ordering and staff communication.
+Focused on the coursework ordering prototype rather than broader communication tasks.
 All vocabulary verified against HKSLLEX (HKU) and HKSL Browser (CUHK).
 """
 
@@ -17,7 +17,7 @@ PHASE_1_ADDITIONS = ["hamburger", "fries", "apple_pie", "hash_brown", "thank_you
 # PHASE 2 additions (next batch - medium priority)
 PHASE_2_ADDITIONS = []
 
-# PHASE 3 additions (specialized - staff communication focus)
+# PHASE 3 additions (currently unused)
 PHASE_3_ADDITIONS = []
 
 # PHASE 4 additions (ordering glue words)
@@ -40,8 +40,23 @@ CONNECTOR_WORDS = ["and", "with"]
 # Service words (politeness, confirmation)
 SERVICE_WORDS = ["thank_you"]
 
-# CURRENT DEFAULT (submission scope requested)
-DEFAULT_LABELS = [
+# Active, truthful runtime baseline (current reliable default = 11 tokens)
+ACTIVE_BASELINE_LABELS = [
+    "i",
+    "want",
+    "one",
+    "two",
+    "hamburger",
+    "fries",
+    "apple_pie",
+    "hash_brown",
+    "and",
+    "with",
+    "thank_you",
+]
+
+# Intended submission target (planned 14-token set; not default runtime behavior)
+TARGET_SUBMISSION_LABELS = [
     "i",
     "want",
     "one",
@@ -58,8 +73,12 @@ DEFAULT_LABELS = [
     "thank_you",
 ]
 
-# EXPANDED: mirrors DEFAULT_LABELS for this current data-input phase
-EXPANDED_LABELS = list(DEFAULT_LABELS)
+# Backward-compatible alias used by existing scripts/tools.
+# Keep this mapped to the active baseline to preserve current safe behavior.
+DEFAULT_LABELS = list(ACTIVE_BASELINE_LABELS)
+
+# EXPANDED set is explicitly the target submission scope.
+EXPANDED_LABELS = list(TARGET_SUBMISSION_LABELS)
 
 TOKEN_DISPLAY_MAP: Dict[str, str] = {
     # Phase 0 (original)
@@ -118,6 +137,9 @@ def load_label_set(path: str | None = None) -> List[str]:
 def get_vocabulary_info() -> Dict[str, list]:
     """Return structured vocabulary metadata."""
     return {
+        "current_default": DEFAULT_LABELS,
+        "active_baseline": ACTIVE_BASELINE_LABELS,
+        "target_submission": TARGET_SUBMISSION_LABELS,
         "current_phase_0": DEFAULT_LABELS,
         "phase_1_additions": PHASE_1_ADDITIONS,
         "phase_2_additions": PHASE_2_ADDITIONS,

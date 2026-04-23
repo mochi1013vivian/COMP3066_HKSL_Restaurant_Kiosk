@@ -494,7 +494,7 @@ def draw_demo_ui(
     panel_x = layout.panel_x
     pad = layout.pad
 
-    # ---- Reference-inspired ASL detector palette (wood + cream + red/blue accents)
+    # ---- HKSL ordering palette (wood + cream + red/blue accents)
     white_bg = (242, 246, 252)
     panel_bg = (74, 94, 122)
     card_bg = (236, 239, 245)
@@ -556,7 +556,7 @@ def draw_demo_ui(
     live_y = hy + max(6, int(round(hh * 0.14)))
     _draw_badge(canvas, "LIVE", live_x, live_y, live_w, live_h, mcd_red, (255, 255, 255))
 
-    title = "ASL ORDER DETECTOR"
+    title = "HKSL ORDER DETECTOR"
     subtitle = "SIGNATURE BITES"
     title_max_w = max(80, (live_x - 8) - (hx + header_pad_x))
     title_scale = _fit_text_scale(
@@ -584,7 +584,7 @@ def draw_demo_ui(
     cv2.putText(canvas, subtitle, (hx + header_pad_x, sub_y), cv2.FONT_HERSHEY_SIMPLEX, sub_scale, text_muted, 1, cv2.LINE_AA)
     _draw_unicode_text(
         canvas,
-        "🍔  🍟  🥤",
+        "🍔  🍟  🥧",
         hx + hw - max(20, int(round(hw * 0.18))),
         sub_y - 1,
         font_size=max(10, int(round(hh * 0.22))),
@@ -595,7 +595,7 @@ def draw_demo_ui(
     wx0, wy0, ww0, wh0 = layout.word_card
     _rounded_card(canvas, wx0, wy0, ww0, wh0, card_bg, r=14)
     word_pad_x = max(8, int(round(ww0 * 0.035)))
-    _draw_card_title(canvas, "THE WORDS DETECTING NOW:", wx0 + word_pad_x, wy0 + max(18, int(round(wh0 * 0.22))))
+    _draw_card_title(canvas, "CURRENT DETECTED WORD:", wx0 + word_pad_x, wy0 + max(18, int(round(wh0 * 0.22))))
     live_word_raw = (live_token or "").strip().upper()
     stable_word_raw = (confirmed_token or "").strip().upper()
     live_word = live_word_raw if _is_clean_token(live_word_raw) else ""
@@ -688,8 +688,39 @@ def draw_demo_ui(
     _draw_card_title(canvas, "THE FINAL SENTENCE:", sx0 + sentence_pad_x, sy0 + max(18, int(round(sh0 * 0.16))))
 
     sentence_clean = (sentence_text or "").strip() or "(empty)"
+
+    show_secondary_line = sh0 >= 105
+    food_label_map = {
+        "hamburger": "HAMBURGER",
+        "fries": "FRIES",
+        "apple_pie": "APPLE PIE",
+        "hash_brown": "HASH BROWN",
+    }
+    food_tokens_present: List[str] = []
+    for tk in sentence_tokens:
+        key = (tk or "").strip().lower()
+        if key in food_label_map and food_label_map[key] not in food_tokens_present:
+            food_tokens_present.append(food_label_map[key])
+    secondary_line = "FOOD TOKENS: " + (" | ".join(food_tokens_present[:4]) if food_tokens_present else "none")
+
     content_top = sy0 + max(34, int(round(sh0 * 0.24)))
     content_bottom = sy0 + sh0 - max(8, int(round(sh0 * 0.06)))
+    secondary_baseline_y = 0
+    secondary_scale = 0.0
+    if show_secondary_line:
+        secondary_scale = _fit_text_scale(
+            secondary_line,
+            target_px=max(10, int(round(sh0 * 0.12))),
+            max_width=sw0 - (sentence_pad_x * 2),
+            max_height=max(10, int(round(sh0 * 0.16))),
+            thickness=1,
+            min_scale=0.30,
+            max_scale=0.62,
+        )
+        _, sec_h = cv2.getTextSize(secondary_line, cv2.FONT_HERSHEY_SIMPLEX, secondary_scale, 1)[0]
+        secondary_baseline_y = sy0 + sh0 - max(8, int(round(sh0 * 0.10)))
+        secondary_top = secondary_baseline_y - sec_h - 2
+        content_bottom = min(content_bottom, secondary_top - max(6, int(round(sh0 * 0.05))))
     content_h = max(24, content_bottom - content_top)
     lines, sent_scale, line_h = _fit_multiline_sentence(
         sentence_clean,
@@ -706,30 +737,17 @@ def draw_demo_ui(
             break
         cv2.putText(canvas, line, (content_left, ly), cv2.FONT_HERSHEY_SIMPLEX, sent_scale, text_dark, 1, cv2.LINE_AA)
 
-    # Add emoji preview row similar to reference board
-    emoji_tokens = [
-        _food_emoji(tk) for tk in sentence_tokens if _food_emoji(tk)
-    ]
-    emoji_line = "EMOJI: " + (" ".join(emoji_tokens[:4]) if emoji_tokens else "🍔 🍟 🥤")
-    emoji_scale = _fit_text_scale(
-        emoji_line,
-        target_px=max(10, int(round(sh0 * 0.12))),
-        max_width=sw0 - (sentence_pad_x * 2),
-        max_height=max(10, int(round(sh0 * 0.16))),
-        thickness=1,
-        min_scale=0.30,
-        max_scale=0.62,
-    )
-    cv2.putText(
-        canvas,
-        emoji_line,
-        (sx0 + sentence_pad_x, sy0 + sh0 - max(8, int(round(sh0 * 0.10)))),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        emoji_scale,
-        text_dark,
-        1,
-        cv2.LINE_AA,
-    )
+    if show_secondary_line and secondary_scale > 0:
+        cv2.putText(
+            canvas,
+            secondary_line,
+            (sx0 + sentence_pad_x, secondary_baseline_y),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            secondary_scale,
+            text_dark,
+            1,
+            cv2.LINE_AA,
+        )
 
     # Intentionally show only final sentence text in this card.
 
@@ -827,7 +845,7 @@ def draw_demo_ui(
             cv2.putText(canvas, line, (ax0 + order_pad_x, baseline), cv2.FONT_HERSHEY_SIMPLEX, scale_line, color, 1, cv2.LINE_AA)
             baseline += detail_step
 
-    # 4) Speech recognition card
+    # 4) Optional speech add-on card
     spx, spy, spw, sph = layout.speech_card
     if sph > 0:
         # Pick background color based on state
@@ -844,8 +862,8 @@ def draw_demo_ui(
         _rounded_card(canvas, spx, spy, spw, sph, card_speech_bg, r=12)
         sp_pad = max(8, int(round(spw * 0.035)))
 
-        # Row 1: microphone icon + status label
-        mic_label = "\U0001f3a4 " + (speech_status if speech_status else "Speech OFF")
+        # Row 1: status label (ASCII-only for robust cv2 rendering)
+        mic_label = "SPEECH: " + (speech_status if speech_status else "Optional speech OFF")
         status_scale = _fit_text_scale(
             mic_label,
             target_px=max(10, int(round(sph * 0.22))),
@@ -868,7 +886,7 @@ def draw_demo_ui(
             phrase_color = text_muted
             phrase_thickness = 1
         else:
-            phrase_text = "Waiting for speech..."
+            phrase_text = "Waiting for optional speech..."
             phrase_color = (160, 160, 160)
             phrase_thickness = 1
 

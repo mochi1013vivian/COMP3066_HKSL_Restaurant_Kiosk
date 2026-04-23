@@ -5,7 +5,7 @@ This script reads:
 - confusion_matrix.csv
 
 from an evaluation report directory, then prints metrics focused on one confusing label pair
-(e.g., table vs fries).
+(e.g., hamburger vs hash_brown).
 
 Important:
 - Thresholds are heuristics by design and are configurable via CLI.
@@ -23,8 +23,8 @@ import pandas as pd
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Pair-focused confusion report with heuristic recommendations.")
     parser.add_argument("--report-dir", type=Path, required=True, help="Directory containing class_report.csv and confusion_matrix.csv")
-    parser.add_argument("--label-a", default="table", help="First label in the confusing pair")
-    parser.add_argument("--label-b", default="fries", help="Second label in the confusing pair")
+    parser.add_argument("--label-a", default="hamburger", help="First label in the confusing pair")
+    parser.add_argument("--label-b", default="hash_brown", help="Second label in the confusing pair")
     parser.add_argument(
         "--live-confusion-rate",
         type=float,

@@ -7,8 +7,8 @@ Optional text-to-speech on demand.
 
 from __future__ import annotations
 
-import os
 import re
+import subprocess
 import sys
 from typing import Optional, Tuple
 
@@ -21,7 +21,11 @@ def play_confirmation_sound(enabled: bool = True) -> None:
     try:
         if sys.platform == "darwin":
             # macOS: Use Bell or Glass sound (softer than Glass.aiff)
-            os.system("afplay /System/Library/Sounds/Glass.aiff >/dev/null 2>&1 &")
+            subprocess.Popen(
+                ["afplay", "/System/Library/Sounds/Glass.aiff"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
         else:
             # Other platforms: quiet beep
             print("\a", end="", flush=True)
@@ -46,9 +50,11 @@ def speak_text(text: str, voice: str = "Victoria") -> None:
     
     try:
         if sys.platform == "darwin":
-            # Escape quotes for shell
-            safe_text = text.replace('"', '\\"')
-            os.system(f'echo "{safe_text}" | say -v {voice} 2>/dev/null &')
+            subprocess.Popen(
+                ["say", "-v", voice, text],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
         else:
             # Linux/Windows: placeholder (would need espeak or similar)
             print(f"[TTS] {text}", file=sys.stderr)
@@ -59,7 +65,7 @@ def speak_text(text: str, voice: str = "Victoria") -> None:
 def recognize_speech_once(timeout: float = 4.0, phrase_time_limit: float = 6.0) -> Optional[str]:
     """Capture one microphone utterance and return recognized text.
 
-    Uses SpeechRecognition (Google Web Speech API backend).
+    Uses SpeechRecognition (Google Web Speech API backend) for the optional speech add-on.
     Returns None when recognition fails or dependency/hardware is unavailable.
     """
     try:
@@ -67,9 +73,24 @@ def recognize_speech_once(timeout: float = 4.0, phrase_time_limit: float = 6.0) 
     except Exception:
         return None
 
+    try:
+        recognizer = sr.Recognizer()
+        recognizer.dynamic_energy_threshold = True
+        recognizer.pause_threshold = 0.7
+
+        with sr.Microphone() as source:
+            recognizer.adjust_for_ambient_noise(source, duration=0.4)
+            audio = recognizer.listen(source, timeout=timeout, phrase_time_limit=phrase_time_limit)
+
+        text = recognizer.recognize_google(audio)
+        text = text.strip()
+        return text or None
+    except Exception:
+        return None
+
 
 def normalize_waiter_phrase(text: str) -> Optional[str]:
-    """Normalize free-form speech to target waiter phrases.
+    """Normalize optional speech add-on input to a small set of demo phrases.
 
     Returns one of:
     - "No problem"
@@ -113,36 +134,21 @@ def normalize_waiter_phrase(text: str) -> Optional[str]:
 
     return None
 
-    try:
-        recognizer = sr.Recognizer()
-        recognizer.dynamic_energy_threshold = True
-        recognizer.pause_threshold = 0.7
-
-        with sr.Microphone() as source:
-            recognizer.adjust_for_ambient_noise(source, duration=0.4)
-            audio = recognizer.listen(source, timeout=timeout, phrase_time_limit=phrase_time_limit)
-
-        text = recognizer.recognize_google(audio)
-        text = text.strip()
-        return text or None
-    except Exception:
-        return None
-
 
 def speech_backend_status() -> str:
-    """Return a short status string for speech-recognition readiness."""
+    """Return a short status string for optional speech add-on readiness."""
     try:
         import speech_recognition as sr  # type: ignore
     except Exception:
-        return "SpeechRecognition not installed"
+        return "Optional speech unavailable"
 
     try:
         names = sr.Microphone.list_microphone_names()
         if not names:
-            return "No microphone device found"
-        return f"Speech STT ON ({len(names)} mic device(s))"
+            return "Optional speech unavailable: no microphone found"
+        return f"Optional speech ON ({len(names)} mic device(s))"
     except Exception as exc:
-        return f"Microphone unavailable: {exc}"
+        return f"Optional speech unavailable: {exc}"
 
 
 def recognize_speech_once_verbose(

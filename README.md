@@ -1,10 +1,24 @@
-# HKSL Realtime Communication Assistant (PyTorch)
+# HKSL Realtime Ordering Assistant (PyTorch)
 
-**Assistive technology supporting:**
-1. **Deaf customers ordering food** at restaurants (primary demo use case)
-2. **Deaf restaurant staff communicating** with coworkers (secondary impact scenario)
+COMP3066 prototype for **closed-domain HKSL fast-food ordering** using a webcam,
+MediaPipe landmarks, and a PyTorch GRU sequence classifier.
 
-COMP3066 prototype using closed-domain HKSL for realistic restaurant environments.
+## Current repo state
+
+This repository currently has two important scopes:
+
+1. **Active baseline (truthful current default)**
+	- 11-token working model/data bundle
+	- dataset: `data/raw/landmarks_sequences.csv`
+	- model: `models/best_gru_hands_pose_full.pt`
+	- classes: `models/class_names.json`
+	- reports: `data/processed/eval_reports_active_baseline/`
+
+2. **Target submission scope (not yet the active default)**
+	- intended 14-token submission vocabulary in `data/raw/labels_submission_hands_pose.txt`
+	- related partial artifacts exist, but they are not yet a coherent runnable default bundle
+
+If you are taking over this repo, treat the **11-token active baseline** as the current reliable starting point.
 
 **Design focus:**
 - MediaPipe hand landmarks (Lab 8 style workflow)
@@ -13,14 +27,11 @@ COMP3066 prototype using closed-domain HKSL for realistic restaurant environment
 - **Presentation-mode optimization** for live demonstrations
 - High-contrast UI emphasizing final sentence output
 
-## Current vocabulary (default)
+## Active baseline vocabulary (default)
 - `i`
 - `want`
 - `one`
 - `two`
-- `three`
-- `four`
-- `five`
 - `hamburger`
 - `fries`
 - `hash_brown`
@@ -29,7 +40,10 @@ COMP3066 prototype using closed-domain HKSL for realistic restaurant environment
 - `with`
 - `thank_you`
 
-Fresh recollection set:
+## Target submission vocabulary (planned next step)
+
+The intended 14-token submission set is:
+
 - `i`
 - `want`
 - `hamburger`
@@ -44,6 +58,10 @@ Fresh recollection set:
 - `three`
 - `four`
 - `five`
+
+The repo is therefore currently in a transition state:
+- **working baseline** = 11 tokens
+- **desired submission target** = 14 tokens
 
 ### Clean recollection plan
 
@@ -77,8 +95,9 @@ You can edit `src/config/labels.py` for controlled vocabulary changes.
 
 Canonical paths:
 - raw data: `data/raw/landmarks_sequences.csv`
-- model checkpoint: `models/best_gru.pt`
-- evaluation outputs: `data/processed/eval_reports/`
+- model checkpoint: `models/best_gru_hands_pose_full.pt`
+- class names: `models/class_names.json`
+- evaluation outputs: `data/processed/eval_reports_active_baseline/`
 
 ---
 
@@ -148,7 +167,7 @@ python src/train/train_gru.py --data data/raw/landmarks_sequences.csv --window-s
 ```
 
 Outputs:
-- `models/best_gru.pt`
+- `models/best_gru_hands_pose_full.pt`
 - `models/class_names.json`
 
 ---
@@ -156,34 +175,34 @@ Outputs:
 ## 4) Evaluate model
 
 ```bash
-python src/eval/evaluate_gru.py --data data/raw/landmarks_sequences.csv --window-size 20 --feature-mode hands_pose
+python src/eval/evaluate_gru.py --data data/raw/landmarks_sequences.csv --model models/best_gru_hands_pose_full.pt --report-dir data/processed/eval_reports_active_baseline --window-size 20 --feature-mode hands_pose
 ```
 
-Outputs in `data/processed/eval_reports/`:
+Outputs in `data/processed/eval_reports_active_baseline/`:
 - `metrics.json`
 - `class_report.csv`
 - `confusion_matrix.csv`
 - `confusion_matrix.png`
 - `top_confusions.txt`
 
-### Pair-focused diagnostics (example: `table` vs `fries`)
+### Pair-focused diagnostics
 
-Use the helper script below after evaluation to inspect directional confusion and class-level metrics for a confusing pair:
+Use the helper script below after evaluation to inspect directional confusion and class-level metrics for an **in-scope** confusing pair:
 
 ```bash
 python src/eval/pair_confusion_report.py \
-	--report-dir data/processed/eval_reports \
-	--label-a table \
-	--label-b fries
+	--report-dir data/processed/eval_reports_active_baseline \
+	--label-a hamburger \
+	--label-b hash_brown
 ```
 
 If you ran a live protocol and observed confusion in realtime, pass it too:
 
 ```bash
 python src/eval/pair_confusion_report.py \
-	--report-dir data/processed/eval_reports \
-	--label-a table \
-	--label-b fries \
+	--report-dir data/processed/eval_reports_active_baseline \
+	--label-a hamburger \
+	--label-b hash_brown \
 	--live-confusion-rate 0.24 \
 	--recollection-rounds 1
 ```
@@ -223,13 +242,12 @@ Notes:
 
 ## Explicit data-path discipline (important)
 
-To avoid mixing datasets (e.g., `landmarks_sequences.csv` vs `landmarks_sequences.csv`), always pass `--data` explicitly in both training and evaluation.
+To avoid mixing datasets (e.g., `landmarks_sequences.csv` vs `landmarks_sequences_submission_hands_pose.csv`), always pass `--data` explicitly in both training and evaluation.
 
 - Good: train and eval both point to the same explicit dataset path
 - Avoid: relying on defaults when multiple sequence CSVs exist
 
-For focused `table`/`fries` troubleshooting, use:
-- `TABLE_FRIES_COLLECTION_EVAL_PROTOCOL.md` (collection + offline eval + live test checklist)
+For focused troubleshooting, use a real confusing pair from your current report output rather than an old archived example.
 
 ---
 
@@ -245,10 +263,12 @@ python src/app.py --camera-index 1 --sound
 python src/app.py --camera-index 1 --sound --presentation-mode
 ```
 
-### With text-to-speech (reads final sentence on Enter):
+### With text-to-speech (optional extra: reads final sentence on Enter):
 ```bash
 python src/app.py --camera-index 1 --sound --tts
 ```
+
+Optional TTS / microphone speech features are presentation add-ons, not part of the core ordering-recognition scope.
 
 ### Realtime controls
 - **Confirm Order button**: freeze the current sentence and send it to the kiosk-style confirmation panel
@@ -279,7 +299,7 @@ The order number is **auto-generated** from a session counter (starting at `A12`
 - `--accept-confidence` (default `0.78`, presentation: `0.80`)
 - `--stable-frames` (default `6`, presentation: `6`)
 - `--accept-cooldown` (default `1.0`s, presentation: `0.35`s)
-- `--repeat-block-seconds` (default `2.0`s, presentation: `2.2`s)
+- `--repeat-block-seconds` (default `2.0`s, presentation: `1.8`s)
 - `--no-sign-frames` (default `11` frames, ~367ms @ 30fps)
 
 ### Suggested precision pass for the new dataset
@@ -302,11 +322,11 @@ For live sensitivity tuning:
 Increase confidence and stable-frames for fewer false accepts.
 
 ### Presentation mode features
-- **Camera resolution**: 640×480 (low latency)
-- **Hand detection**: 1 hand max (faster, cleaner)
+- **Camera resolution**: 960×540 (low latency)
+- **Hand detection**: 2 hands max (kept consistent with train/collect contract)
 - **Model complexity**: 0 (lite, real-time)
-- **Display**: Smooth 30+ FPS with large sentence output
-- **Thresholds**: Stricter confidence, faster acceptance
+- **Display**: low-latency rendering with frame skipping (`--skip-frames 1` in presentation mode)
+- **Thresholds**: confidence 0.80, stable-frames 6, cooldown 0.35s, repeat-block 1.8s
 
 ---
 
@@ -315,17 +335,11 @@ Increase confidence and stable-frames for fewer false accepts.
 ### Primary: Deaf Customer Food Ordering
 - Customer walks into restaurant and uses sign language
 - App recognizes signs and builds food order
-- Final sentence (e.g., "i want hamburger and cola") is displayed/spoken
+- Final sentence (e.g., "I want one hamburger and fries") is displayed/spoken
 - Staff can read the order from the screen or hear TTS output
 - **UI emphasis**: Large final sentence as main visual output
 
-### Secondary: Staff Communication
-- Deaf restaurant staff can communicate with coworkers using same app
-- Builds short messages in real-time during service
-- Coworkers see/hear the message on shared display
-- Same stabilization and duplicate-blocking logic prevents mishearing
-
-Both scenarios use the same model and logic — just different social contexts.
+This repo currently focuses on the **customer ordering** scenario. Any broader communication features should be treated as extra experiments, not the core submission story.
 
 ---
 
@@ -334,21 +348,26 @@ Both scenarios use the same model and logic — just different social contexts.
 After testing on live demonstrations, these values optimize for real-time accuracy and user experience:
 
 ### ✅ Presentation Mode (Low-Latency, Live Demo)
-- `--accept-confidence`: **0.83** → Stricter; fewer false positives
-- `--stable-frames`: **8** → 8 frames @ 30fps ≈ 267ms confirmation window
-- `--accept-cooldown`: **0.4** seconds → Fast successive words possible
-- `--repeat-block-seconds`: **2.2** seconds → Prevent rapid repetition
+- `--accept-confidence`: **0.80**
+- `--stable-frames`: **6**
+- `--accept-cooldown`: **0.35** seconds
+- `--repeat-block-seconds`: **1.8** seconds
 - `--no-sign-frames`: **11** frames → @ 30fps ≈ 367ms of no-sign required before same word can be added again
-- `--min-detection-confidence`: **0.65** → Tighter hand detection; fewer spurious frames
-- **Camera**: 640×480 resolution
-- **MediaPipe model**: Complexity 0 (Lite), max_num_hands=1
+- `--min-detection-confidence`: **0.60**
+- **Camera**: 960×540 resolution
+- **MediaPipe model**: Complexity 0 (Lite), max_num_hands=2
 
 **Rationale:**
-- **0.83 confidence**: Prevents spurious words during hand movement between signs
-- **8-frame buffer** (~267ms): Feels snappy while remaining stable
+- **0.80 confidence**: Keeps acceptance practical while reducing obvious false accepts
+- **6-frame buffer**: Balances responsiveness and stability for live demo rhythm
 - **11-frame no-sign gap** (~367ms): Prevents accidentally repeating words when user holds a sign too long
-- **0.4s cooldown**: Allows fast, natural rhythm for multiple-word orders
-- **2.2s repeat block**: Prevents same word appearing twice in quick succession
+- **0.35s cooldown**: Allows fast, natural rhythm for multiple-word orders
+- **1.8s repeat block**: Prevents same word appearing twice in quick succession
+
+### Archived optional speech web demo
+
+`speech_demo.html` is an archived standalone browser experiment for speech phrase matching.
+It is optional and not part of the core HKSL ordering pipeline/runtime path.
 
 ### 🔍 Normal Mode (Higher Accuracy, Less Latency Emphasis)
 - Uses defaults: confidence 0.78, stable-frames 6, cooldown 1.0s
@@ -370,9 +389,9 @@ After testing on live demonstrations, these values optimize for real-time accura
 
 - **Lab 8 alignment**: Webcam + MediaPipe landmark extraction + realtime loop
 - **Lab 7 alignment**: Modular train/eval scripts, validation split, saved model checkpoint
-- **Assistive tech focus**: Real-world application (restaurant ordering + staff communication)
+- **Assistive tech focus**: Real-world application (restaurant ordering)
 - **Stability design**: Duplicate-word blocking + multi-frame confirmation prevents user frustration
 
 This is deliberately **not** a general sign-language translator.
-It is a focused HKSL restaurant-ordering and staff-communication assistive prototype
+It is a focused HKSL restaurant-ordering assistive prototype
 with optimized thresholds for live demonstrations and low-latency real-world use.

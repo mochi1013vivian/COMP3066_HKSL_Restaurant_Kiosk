@@ -1,6 +1,10 @@
 """Project-root launcher for realtime demo.
 
 Allows running:
+    python realtime_demo.py --presentation-mode
+
+Optional extras:
+    python realtime_demo.py --presentation-mode --tts
     python realtime_demo.py --presentation-mode --speech-recognition
 """
 

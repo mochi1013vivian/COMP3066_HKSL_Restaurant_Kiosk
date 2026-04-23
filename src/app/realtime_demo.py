@@ -1,7 +1,7 @@
-"""Realtime PyTorch GRU inference app for HKSL restaurant ordering & staff communication.
+"""Realtime PyTorch GRU inference app for HKSL fast-food ordering.
 
-Supports deaf customer food ordering (primary) and staff communication with coworkers (secondary).
-Low-latency presentation mode available for real-time demonstrations.
+Primary use case: deaf customer food ordering in a closed-domain restaurant setting.
+Low-latency presentation mode is available for live demonstrations.
 """
 
 from __future__ import annotations
@@ -36,9 +36,6 @@ try:
         normalize_waiter_phrase,
         play_accept_sound,
         play_confirmation_sound,
-        recognize_speech_once,
-        recognize_speech_once_verbose,
-        speech_backend_status,
         speak_text,
     )
     from .sentence_builder import OrderSentenceBuilder
@@ -71,9 +68,6 @@ except ImportError:  # pragma: no cover
         normalize_waiter_phrase,
         play_accept_sound,
         play_confirmation_sound,
-        recognize_speech_once,
-        recognize_speech_once_verbose,
-        speech_backend_status,
         speak_text,
     )
     from sentence_builder import OrderSentenceBuilder
@@ -82,7 +76,7 @@ except ImportError:  # pragma: no cover
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Realtime HKSL GRU demo for customer ordering & staff communication."
+        description="Realtime HKSL GRU demo for fast-food customer ordering."
     )
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL_PATH)
     parser.add_argument("--camera-index", type=int, default=1)
@@ -97,14 +91,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-pose-tracking-confidence", type=float, default=0.35)
     parser.add_argument("--pose-visibility-threshold", type=float, default=0.35)
     parser.add_argument("--sound", action="store_true", help="Enable confirmation chimes on word acceptance")
-    parser.add_argument("--presentation-mode", action="store_true", help="Low-latency mode: 640x480, max_1_hand, model_lite, skip frames")
+    parser.add_argument("--presentation-mode", action="store_true", help="Low-latency mode: 960x540, 2-hand contract, model_lite, skip frames")
     parser.add_argument("--skip-frames", type=int, default=0, help="Run inference every Nth frame (0=every frame)")
-    parser.add_argument("--camera-width", type=int, default=0, help="Camera width (0=auto, 1280 normal, 640 presentation)")
-    parser.add_argument("--camera-height", type=int, default=0, help="Camera height (0=auto, 720 normal, 480 presentation)")
-    parser.add_argument("--tts", action="store_true", help="Enable text-to-speech on Enter key")
-    parser.add_argument("--speech-recognition", action="store_true", help="Enable microphone speech-to-text (press V to listen)")
-    parser.add_argument("--speech-timeout", type=float, default=4.0, help="Seconds to wait for user speech start")
-    parser.add_argument("--speech-phrase-limit", type=float, default=6.0, help="Max seconds per speech utterance")
+    parser.add_argument("--camera-width", type=int, default=0, help="Camera width (0=auto, 1280 normal, 960 presentation)")
+    parser.add_argument("--camera-height", type=int, default=0, help="Camera height (0=auto, 720 normal, 540 presentation)")
+    parser.add_argument("--tts", action="store_true", help="Optional text-to-speech add-on for the final sentence (Enter key)")
+    parser.add_argument("--speech-recognition", action="store_true", help="Optional microphone speech add-on")
+    parser.add_argument("--speech-timeout", type=float, default=4.0, help="Seconds to wait for optional speech start")
+    parser.add_argument("--speech-phrase-limit", type=float, default=6.0, help="Max seconds per optional speech utterance")
     parser.add_argument("--debug-ui", action="store_true", help="Enable instrumented UI/debug logs and hardcoded panel markers")
     parser.add_argument(
         "--show-pose-debug",
@@ -223,22 +217,22 @@ def main() -> None:
     display_confirmed_token: Optional[str] = None
     display_confirmed_count: int = 0
 
-    # ── Speech recognition state (updated by background thread) ──────
+    # ── Optional speech add-on state (updated by background thread) ──
     _speech_lock = threading.Lock()
     _speech_state = {
-        "status": "Speech OFF",
+        "status": "Optional speech OFF",
         "transcript": "",
         "matched": "",
     }
     _speech_stop = threading.Event()
 
     def _speech_worker() -> None:
-        """Continuously listens for speech and updates _speech_state."""
+        """Continuously listens for optional speech add-on input."""
         try:
             import speech_recognition as sr  # type: ignore
         except ImportError:
             with _speech_lock:
-                _speech_state["status"] = "SpeechRecognition not installed"
+                _speech_state["status"] = "Optional speech unavailable"
             return
 
         recognizer = sr.Recognizer()
@@ -249,14 +243,14 @@ def main() -> None:
             mic = sr.Microphone()
         except Exception as exc:
             with _speech_lock:
-                _speech_state["status"] = f"No mic: {exc}"
+                _speech_state["status"] = f"Optional speech unavailable: {exc}"
             return
 
         with mic as source:
             recognizer.adjust_for_ambient_noise(source, duration=0.5)
 
         with _speech_lock:
-            _speech_state["status"] = "Listening"
+            _speech_state["status"] = "Listening (optional speech)"
 
         while not _speech_stop.is_set():
             try:
@@ -272,27 +266,25 @@ def main() -> None:
                     with _speech_lock:
                         _speech_state["transcript"] = text
                         _speech_state["matched"] = matched or ""
-                        _speech_state["status"] = f"Detected: {matched}" if matched else "Listening"
+                        _speech_state["status"] = f"Detected: {matched}" if matched else "Listening (optional speech)"
                     if matched:
                         speak_text(matched)
             except sr.WaitTimeoutError:
                 with _speech_lock:
-                    _speech_state["status"] = "Listening"
+                    _speech_state["status"] = "Listening (optional speech)"
             except sr.UnknownValueError:
                 with _speech_lock:
-                    _speech_state["status"] = "Speech not detected"
+                    _speech_state["status"] = "Optional speech not detected"
             except sr.RequestError as exc:
                 with _speech_lock:
-                    _speech_state["status"] = f"Service error: {exc}"
+                    _speech_state["status"] = f"Optional speech service error: {exc}"
             except Exception as exc:
                 with _speech_lock:
-                    _speech_state["status"] = f"Error: {exc}"
+                    _speech_state["status"] = f"Optional speech error: {exc}"
 
     if args.speech_recognition:
         _t = threading.Thread(target=_speech_worker, daemon=True)
         _t.start()
-        # Imitate waiter initiating conversation.
-        speak_text("What can I help you?")
 
     def reset_live_order_state() -> None:
         nonlocal sentence, frame_buffer, pred_history
@@ -362,7 +354,7 @@ def main() -> None:
             changed = True
         return changed
 
-    window_name = "HKSL Realtime: Deaf Customer Ordering + Staff Communication" if args.presentation_mode else "HKSL Restaurant Demo"
+    window_name = "HKSL Realtime Ordering Demo" if args.presentation_mode else "HKSL Ordering Demo"
     cv2.namedWindow(window_name, cv2.WINDOW_AUTOSIZE)
 
     # Fixed 16:9 composition (PPT-like) for presentation clarity.
@@ -507,7 +499,7 @@ def main() -> None:
 
             mode_label = "PRESENTATION (low-latency)" if args.presentation_mode else "NORMAL"
             status_lines = [
-                f"Mode: {mode_label}  |  Controls: X=reset | C=confirm | N=new order | V=voice STT | Enter=speak | Q/ESC=quit",
+                f"Mode: {mode_label}  |  Controls: X=reset | C=confirm | N=new order | Enter=speak | Q/ESC=quit",
                 f"No-sign frames: {no_sign_frame_count}/{args.no_sign_frames}  |  Cooldown: {max(0, args.accept_cooldown - (now - last_accept_ts)):.1f}s",
                 f"Features: {feature_mode}",
             ]
